@@ -47,7 +47,7 @@ src/
 │
 ├── views/                 # Páginas (Rutas de Vue Router)
 └── App.vue
-
+```
 Links:
 
 Repositorio backend: https://github.com/Raynagah/backend-eft-fullstack-III.git
