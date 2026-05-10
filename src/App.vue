@@ -8,7 +8,7 @@
       <nav class="navbar-links">
         <router-link to="/" class="nav-link">Inicio</router-link>
         <router-link to="/mascotas" class="nav-link">Mascotas</router-link>
-        <button class="btn-reportar">Reportar Mascota</button>
+        <button class="btn-reportar" @click="$router.push('/reportar')">Reportar Mascota</button>
       </nav>
     </header>
 

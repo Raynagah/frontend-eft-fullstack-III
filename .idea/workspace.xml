@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ea00103d-9d18-4284-81e0-cfa79bb74357" name="Changes" comment="" />
+    <list default="true" id="ea00103d-9d18-4284-81e0-cfa79bb74357" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/mascotas/mascotaCard.vue" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/mascotas/mascotaCard.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/views/MascotasView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/src/views/MascotasView.vue" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -68,6 +72,7 @@
       <workItem from="1778367228276" duration="1614000" />
       <workItem from="1778369237675" duration="137000" />
       <workItem from="1778383325037" duration="873000" />
+      <workItem from="1778386485620" duration="17000" />
     </task>
     <servers />
   </component>
