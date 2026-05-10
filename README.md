@@ -5,14 +5,18 @@ Este proyecto es una plataforma distribuida basada en microservicios diseñada p
 ## 🧠 Decisiones de Arquitectura: Frontend
 
 ### 1. Diagnóstico del Proyecto
+
 ¿Cuál es el problema que tiene el proyecto hoy?  
 Antes de la implementación del patrón de diseño, el frontend presentaba un **acoplamiento estrecho** entre la lógica de consumo de datos y la representación visual. Dado que el sistema interactúa con múltiples microservicios (Mascotas, Usuarios, Geolocalización y Motor de Coincidencias) a través de un **API Gateway**, el código de los componentes se volvía denso, difícil de testear y poco reutilizable.
 
 ### 2. Patrón de Diseño Seleccionado
+
 El patrón que mejor se adapta al proyecto es el **Patrón C: Container / Presenter** (Componentes Inteligentes y Tontos).
 
 ### 3. Justificación de la Elección
+
 Consideramos que este patrón es el ideal para el estado actual de "Sanos y Salvos" por las siguientes razones:
+
 * **Separación de Responsabilidades:** Permite aislar la lógica de orquestación de llamadas al Gateway (Container) del diseño visual de las interfaces (Presenter).
 * **Mantenibilidad:** Facilita la actualización de la lógica de negocio (como el manejo de sesiones de usuario o filtros de búsqueda) sin alterar el diseño de la UI.
 * **Testeabilidad:** Los componentes "Presenters" se vuelven puramente visuales, facilitando pruebas unitarias mediante *props* y *events*.
@@ -47,8 +51,10 @@ src/
 │
 ├── views/                 # Páginas (Rutas de Vue Router)
 └── App.vue
+
 ```
-## Links:
+
+## Links
 
 Repositorio backend: https://github.com/Raynagah/backend-eft-fullstack-III.git
 

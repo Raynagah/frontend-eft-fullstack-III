@@ -4,7 +4,7 @@
       <div class="navbar-brand">
         <img src="./assets/Logo Proyecto fullstack III.png" alt="Sanos y Salvos Logo" class="logo-img" />
       </div>
-
+      
       <nav class="navbar-links">
         <router-link to="/" class="nav-link">Inicio</router-link>
         <router-link to="/mascotas" class="nav-link">Mascotas</router-link>
@@ -113,14 +113,14 @@
     gap: 1rem;
     padding: 1rem;
   }
-
+  
   .navbar-links {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
     gap: 1rem;
   }
-
+  
   .btn-reportar {
     width: 100%;
     margin-top: 0.5rem;
