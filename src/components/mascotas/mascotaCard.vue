@@ -1,10 +1,13 @@
 <template>
   <div class="card">
     <div class="card-image">
-      <img src="https://via.placeholder.com/300x200?text=Foto+Mascota" alt="Foto de la mascota" />
+      <img 
+        :src="mascota.fotografiaUrl || 'https://via.placeholder.com/300x200?text=Sin+Foto'" 
+        :alt="'Foto de ' + mascota.nombre" 
+      />
       
       <span class="badge" :class="estadoClase">
-        {{ mascota.estado }}
+        {{ mascota.sagaStatus || mascota.estado }}
       </span>
     </div>
 
@@ -15,7 +18,7 @@
     </div>
 
     <div class="card-actions">
-      <router-link :to="`/detalle/${mascota.id}`" class="btn-detalle">
+      <router-link :to="`/detalle/${mascota.id || mascota.mascotaId}`" class="btn-detalle">
         Ver Detalle
       </router-link>
     </div>
@@ -25,7 +28,6 @@
 <script setup>
 import { computed } from 'vue';
 
-// Recibimos el objeto mascota como Prop desde el componente padre
 const props = defineProps({
   mascota: {
     type: Object,
@@ -33,9 +35,8 @@ const props = defineProps({
   }
 });
 
-// Computed property para darle un color dinámico a la etiqueta según el estado de la saga
 const estadoClase = computed(() => {
-  const estado = props.mascota.estado ? props.mascota.estado.toUpperCase() : '';
+  const estado = (props.mascota.sagaStatus || props.mascota.estado || '').toUpperCase();
   if (estado === 'COMPLETED') return 'badge-success';
   if (estado === 'PENDING') return 'badge-warning';
   if (estado === 'REJECTED' || estado === 'FAILED') return 'badge-danger';
@@ -83,7 +84,6 @@ const estadoClase = computed(() => {
   letter-spacing: 0.5px;
 }
 
-/* Colores dinámicos para los estados de la Saga */
 .badge-success { background-color: #28a745; }
 .badge-warning { background-color: var(--color-accent); }
 .badge-danger { background-color: #dc3545; }
