@@ -25,6 +25,17 @@
             <option value="ENCONTRADA">Encontré una mascota</option>
           </select>
         </div>
+        <div class="input-group">
+          <label>
+            {{ form.tipoReporte === 'PERDIDA' ? 'Nombre de tu mascota *' : 'Nombre (si tiene collar/placa)' }}
+          </label>
+          <input 
+            type="text" 
+            v-model="form.nombre" 
+            :required="form.tipoReporte === 'PERDIDA'" 
+            placeholder="Ej: Max, Luna..." 
+          />
+        </div>
 
         <div class="input-group">
           <label>Especie (Ej. Perro, Gato) *</label>
@@ -84,8 +95,8 @@
         </div>
 
         <div class="input-group full-width">
-          <label>Correo Electrónico (Opcional)</label>
-          <input type="email" v-model="form.emailContacto" placeholder="tu@email.com" />
+          <label>Correo Electrónico *</label>
+          <input type="email" v-model="form.emailContacto" required placeholder="tu@email.com" />
         </div>
       </div>
 
@@ -100,7 +111,8 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
-import axios from 'axios';
+// 1. CAMBIO CLAVE: Importamos nuestra instancia configurada en lugar de axios puro
+import api from '../api/axiosConfig.js'; 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -115,14 +127,15 @@ let marcador = null;
 
 // Objeto reactivo (DTO)
 const form = ref({
-  usuarioId: 1,
+  usuarioId: null, // 2. CAMBIO CLAVE: Inicializamos en null
   tipoReporte: 'PERDIDA',
+  nombre: '',
   especie: '',
   raza: '',
   color: '',
   tamano: '',
   fotografiaUrl: '',
-  latitud: -41.4693, // Coordenadas por defecto (Puerto Montt)
+  latitud: -41.4693, 
   longitud: -72.9423,
   nombreContacto: '',
   telefonoContacto: '',
@@ -146,13 +159,11 @@ const initMap = () => {
     shadowSize: [41, 41]
   });
 
-  // Creamos el marcador y lo hacemos arrastrable (draggable)
   marcador = L.marker([form.value.latitud, form.value.longitud], {
     icon: customIcon,
     draggable: true
   }).addTo(mapaInstancia);
 
-  // Evento 1: Si el usuario hace clic en cualquier parte del mapa
   mapaInstancia.on('click', (e) => {
     const { lat, lng } = e.latlng;
     form.value.latitud = lat;
@@ -160,7 +171,6 @@ const initMap = () => {
     marcador.setLatLng([lat, lng]);
   });
 
-  // Evento 2: Si el usuario arrastra el pin directamente
   marcador.on('dragend', (e) => {
     const { lat, lng } = e.target.getLatLng();
     form.value.latitud = lat;
@@ -168,7 +178,6 @@ const initMap = () => {
   });
 };
 
-// Función para obtener la ubicación del navegador
 const ubicarUsuario = () => {
   if (!navigator.geolocation) {
     alert("Tu navegador no soporta geolocalización.");
@@ -185,7 +194,6 @@ const ubicarUsuario = () => {
       form.value.latitud = lat;
       form.value.longitud = lng;
       
-      // Hacemos un zoom un poco más cercano (17 en vez de 16) para ver mejor la calle
       mapaInstancia.setView([lat, lng], 17); 
       marcador.setLatLng([lat, lng]);
       
@@ -198,22 +206,31 @@ const ubicarUsuario = () => {
     },
     { 
       enableHighAccuracy: true, 
-      maximumAge: 0,       // Obliga al navegador a buscar la ubicación AHORA, sin usar caché
-      timeout: 15000       // Le da 15 segundos para triangular mejor la posición
+      maximumAge: 0, 
+      timeout: 15000 
     } 
   );
 };
 
 const enviarReporte = async () => {
+  // Verificación de seguridad antes de enviar
+  if (!form.value.usuarioId) {
+    error.value = "Debes iniciar sesión para reportar una mascota.";
+    return;
+  }
+
   cargando.value = true;
   error.value = null;
 
   try {
-    await axios.post('http://localhost:8087/api/v1/web/mascotas/reportar', form.value);
+    // 3. CAMBIO CLAVE: Usamos 'api' y la ruta relativa porque la base URL ya está en axiosConfig
+    await api.post('/web/mascotas/reportar', form.value);
     exito.value = true;
   } catch (err) {
     console.error("Error al enviar formulario:", err);
-    if (err.response && err.response.data) {
+    if (err.response && err.response.status === 403) {
+      error.value = "No tienes permiso para realizar esta acción. Verifica tu sesión.";
+    } else if (err.response && err.response.data) {
       error.value = "Error en los datos: Revisa los campos e intenta nuevamente.";
     } else {
       error.value = "Error de conexión con el servidor. Intenta más tarde.";
@@ -224,13 +241,28 @@ const enviarReporte = async () => {
 };
 
 onMounted(async () => {
-  await nextTick(); // Esperamos a que el HTML se dibuje
+  // Recuperar los datos del usuario logueado
+  const userStorage = localStorage.getItem('usuario');
+  
+  if (userStorage) {
+    const userParseado = JSON.parse(userStorage);
+    
+    // Autocompletar datos técnicos
+    form.value.usuarioId = userParseado.id;
+    
+    // Autocompletar datos de contacto (Si existen en el storage)
+    form.value.nombreContacto = userParseado.nombre || '';
+    form.value.telefonoContacto = userParseado.telefono || '';
+    form.value.emailContacto = userParseado.correo || userParseado.email || ''; 
+  }
+
+  await nextTick(); 
   initMap();
 });
 </script>
 
 <style scoped>
-/* ESTILOS ORIGINALES MANTENIDOS */
+/* ESTILOS ORIGINALES */
 
 .nota-mapa {
   font-size: 0.9rem;

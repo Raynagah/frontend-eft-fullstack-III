@@ -15,7 +15,10 @@
         </template>
 
         <template v-else>
-          <span class="user-greeting">Hola, {{ usuarioActual.nombre }}</span>
+          <router-link to="/perfil" class="nav-link profile-link">
+            <span class="user-greeting">👤 Hola, {{ usuarioActual.nombre }}</span>
+          </router-link>
+
           <button class="btn-danger" @click="cerrarSesion">Salir</button>
         </template>
 
@@ -206,5 +209,25 @@ const cerrarSesion = () => {
     width: 100%;
     margin-top: 0.5rem;
   }
+}
+/* Estilo específico para el link del perfil */
+.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.profile-link:hover {
+  background-color: rgba(56, 138, 152, 0.1); /* Un toque del color primary muy suave */
+  text-decoration: none;
+}
+
+.user-greeting {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 </style>

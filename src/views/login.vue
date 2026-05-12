@@ -33,7 +33,6 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-// Asegúrate de que la ruta apunte correctamente a tu archivo axiosConfig.js
 import api from '../api/axiosConfig.js';
 
 const router = useRouter();
@@ -54,7 +53,7 @@ const iniciarSesion = async () => {
       password: password.value
     });
 
-    // Extraemos los datos que envía tu ms-usuarios a través del BFF
+    // Extraemos los datos que envía ms-usuarios a través del BFF
     const { token, sessionId, usuario } = response.data;
 
     // Guardamos las credenciales de seguridad
@@ -82,7 +81,7 @@ const iniciarSesion = async () => {
 </script>
 
 <style scoped>
-/* Usamos tus variables CSS globales para el diseño */
+/* Usamos variables CSS globales para el diseño */
 .login-wrapper {
   display: flex;
   justify-content: center;

@@ -33,6 +33,12 @@ const routes = [
     name: 'mascota-detalle',
     component: () => import('../views/DetalleMascotaView.vue'),
     props: true
+  },
+  {
+    path: '/perfil',
+    name: 'perfil',
+    component: () => import('../views/PerfilView.vue'),
+    meta: { requiresAuth: true } 
   }
 ]
 
