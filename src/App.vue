@@ -4,10 +4,24 @@
       <div class="navbar-brand">
         <img src="./assets/Logo Proyecto fullstack III.png" alt="Sanos y Salvos Logo" class="logo-img" />
       </div>
-      
+
       <nav class="navbar-links">
         <router-link to="/" class="nav-link">Inicio</router-link>
         <router-link to="/mascotas" class="nav-link">Mascotas</router-link>
+
+        <template v-if="!usuarioActual">
+          <router-link to="/login" class="nav-link">Iniciar Sesión</router-link>
+          <router-link to="/registro" class="nav-link">Registrarse</router-link>
+        </template>
+
+        <template v-else>
+          <router-link to="/perfil" class="nav-link profile-link">
+            <span class="user-greeting">👤 Hola, {{ usuarioActual.nombre }}</span>
+          </router-link>
+
+          <button class="btn-danger" @click="cerrarSesion">Salir</button>
+        </template>
+
         <button class="btn-reportar" @click="$router.push('/reportar')">Reportar Mascota</button>
       </nav>
     </header>
@@ -21,6 +35,50 @@
     </footer>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute();
+const usuarioActual = ref(null);
+
+// Función para revisar si hay datos del usuario en el localStorage
+const verificarSesion = () => {
+  const usuarioGuardado = localStorage.getItem('usuario');
+  if (usuarioGuardado) {
+    usuarioActual.value = JSON.parse(usuarioGuardado);
+  } else {
+    usuarioActual.value = null;
+  }
+};
+
+// Revisamos al cargar la aplicación por primera vez
+onMounted(() => {
+  verificarSesion();
+});
+
+// TRUCO MAGICO: Escuchamos cada vez que cambia la URL (por ejemplo, al volver del login).
+// Así la Navbar se actualiza al instante sin recargar el navegador.
+watch(() => route.fullPath, () => {
+  verificarSesion();
+});
+
+const cerrarSesion = () => {
+  // Limpiamos todoo rastro de la sesión
+  localStorage.removeItem('token');
+  localStorage.removeItem('sessionId');
+  localStorage.removeItem('usuario');
+
+  // Actualizamos la variable visual
+  usuarioActual.value = null;
+
+  alert('Has cerrado sesión correctamente.');
+  // Lo enviamos al inicio
+  router.push('/');
+};
+</script>
 
 <style scoped>
 /* Estructura Principal */
@@ -46,7 +104,7 @@
 }
 
 .logo-img {
-  height: 50px; /* Ajusta esto según qué tan grande quieras el logo */
+  height: 50px;
   object-fit: contain;
 }
 
@@ -64,8 +122,34 @@
   transition: color 0.3s ease;
 }
 
-.nav-link:hover, .router-link-active {
+.nav-link:hover,
+.router-link-active {
   color: var(--color-primary);
+}
+
+/* Nuevos estilos para la sesión activa */
+.user-greeting {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.btn-danger {
+  background-color: #E53E3E;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-danger:hover {
+  background-color: #C53030;
+  transform: translateY(-2px);
 }
 
 /* Botón de Acción Principal */
@@ -101,7 +185,7 @@
 .footer {
   text-align: center;
   padding: 1.5rem;
-  background-color: var(--color-text); /* Fondo oscuro para el footer */
+  background-color: var(--color-text);
   color: var(--color-white);
   font-size: 0.9rem;
 }
@@ -113,17 +197,37 @@
     gap: 1rem;
     padding: 1rem;
   }
-  
+
   .navbar-links {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
     gap: 1rem;
   }
-  
+
   .btn-reportar {
     width: 100%;
     margin-top: 0.5rem;
   }
+}
+/* Estilo específico para el link del perfil */
+.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.profile-link:hover {
+  background-color: rgba(56, 138, 152, 0.1); /* Un toque del color primary muy suave */
+  text-decoration: none;
+}
+
+.user-greeting {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 </style>

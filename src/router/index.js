@@ -8,6 +8,16 @@ const routes = [
     component: () => import('../views/HomeView.vue')
   },
   {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/Login.vue')
+  },
+  {
+    path: '/registro',
+    name: 'registro',
+    component: () => import('../views/RegistroView.vue')
+  },
+  {
     path: '/mascotas',
     name: 'mascotas',
     // Este será nuestro contenedor principal que consumirá el BFF!!!!!
@@ -23,6 +33,12 @@ const routes = [
     name: 'mascota-detalle',
     component: () => import('../views/DetalleMascotaView.vue'),
     props: true
+  },
+  {
+    path: '/perfil',
+    name: 'perfil',
+    component: () => import('../views/PerfilView.vue'),
+    meta: { requiresAuth: true } 
   }
 ]
 

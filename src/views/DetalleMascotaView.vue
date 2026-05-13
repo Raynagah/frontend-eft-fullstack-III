@@ -19,7 +19,7 @@
           <span class="badge" :class="estadoClase">{{ mascota.sagaStatus || mascota.estado }}</span>
         </div>
         <div class="titulo-contenedor">
-          <h2>{{ mascota.nombre || 'Mascota sin nombre' }}</h2>
+          <h2>{{ tituloAmigable }}</h2>
           <p class="fecha">Reportado en el sistema</p>
         </div>
       </div>
@@ -163,6 +163,24 @@ const initMap = () => {
     console.error("Error al inicializar el mapa:", err);
   }
 };
+const tituloAmigable = computed(() => {
+  // 1. Si la mascota tiene un nombre válido, lo mostramos directo
+  if (mascota.value.nombre && mascota.value.nombre.trim() !== '') {
+    return mascota.value.nombre;
+  }
+  
+  // 2. Si no tiene nombre (suele pasar en las ENCONTRADAS), armamos el título
+  const especie = mascota.value.especie ? mascota.value.especie.toLowerCase() : 'peludito';
+  
+  if (mascota.value.tipoReporte === 'ENCONTRADA') {
+    if (especie === 'perro') return 'Perrito encontrado';
+    if (especie === 'gato') return 'Gatito encontrado';
+    return `${mascota.value.especie} encontrad@`;
+  } else {
+    // Por si es PERDIDA y alguien logró saltarse la validación del nombre
+    return `Buscamos a este ${especie}`;
+  }
+});
 
 // Carga principal de datos
 const cargarDetalle = async () => {
