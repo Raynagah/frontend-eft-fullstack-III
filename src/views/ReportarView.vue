@@ -25,21 +25,22 @@
             <option value="ENCONTRADA">Encontré una mascota</option>
           </select>
         </div>
+
         <div class="input-group">
           <label>
             {{ form.tipoReporte === 'PERDIDA' ? 'Nombre de tu mascota *' : 'Nombre (si tiene collar/placa)' }}
           </label>
-          <input 
-            type="text" 
-            v-model="form.nombre" 
-            :required="form.tipoReporte === 'PERDIDA'" 
-            placeholder="Ej: Max, Luna..." 
-          />
+          <input type="text" v-model="form.nombre" :required="form.tipoReporte === 'PERDIDA'"
+            placeholder="Ej: Max, Luna..." />
         </div>
 
         <div class="input-group">
-          <label>Especie (Ej. Perro, Gato) *</label>
-          <input type="text" v-model="form.especie" required placeholder="Ej: Perro" />
+          <label>Especie *</label>
+          <select v-model="form.especie" required>
+            <option value="" disabled selected>Selecciona una opción</option>
+            <option value="Perro">Perro</option>
+            <option value="Gato">Gato</option>
+          </select>
         </div>
 
         <div class="input-group">
@@ -84,6 +85,7 @@
 
           <div id="mapa-seleccion" class="mapa-interactivo"></div>
         </div>
+
         <div class="input-group">
           <label>Tu Nombre *</label>
           <input type="text" v-model="form.nombreContacto" required placeholder="Tu nombre y apellido" />
@@ -111,8 +113,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
-// 1. CAMBIO CLAVE: Importamos nuestra instancia configurada en lugar de axios puro
-import api from '../api/axiosConfig.js'; 
+import api from '../api/axiosConfig.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -127,15 +128,15 @@ let marcador = null;
 
 // Objeto reactivo (DTO)
 const form = ref({
-  usuarioId: null, // 2. CAMBIO CLAVE: Inicializamos en null
+  usuarioId: null,
   tipoReporte: 'PERDIDA',
   nombre: '',
-  especie: '',
+  especie: '', // Inicializado vacío para que tome el "Selecciona una opción"
   raza: '',
   color: '',
   tamano: '',
   fotografiaUrl: '',
-  latitud: -41.4693, 
+  latitud: -41.4693,
   longitud: -72.9423,
   nombreContacto: '',
   telefonoContacto: '',
@@ -190,13 +191,13 @@ const ubicarUsuario = () => {
     (position) => {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-      
+
       form.value.latitud = lat;
       form.value.longitud = lng;
-      
-      mapaInstancia.setView([lat, lng], 17); 
+
+      mapaInstancia.setView([lat, lng], 17);
       marcador.setLatLng([lat, lng]);
-      
+
       obteniendoUbicacion.value = false;
     },
     (err) => {
@@ -204,11 +205,11 @@ const ubicarUsuario = () => {
       alert("No pudimos obtener una ubicación precisa. Por favor, marca el punto manualmente en el mapa.");
       obteniendoUbicacion.value = false;
     },
-    { 
-      enableHighAccuracy: true, 
-      maximumAge: 0, 
-      timeout: 15000 
-    } 
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 15000
+    }
   );
 };
 
@@ -223,7 +224,6 @@ const enviarReporte = async () => {
   error.value = null;
 
   try {
-    // 3. CAMBIO CLAVE: Usamos 'api' y la ruta relativa porque la base URL ya está en axiosConfig
     await api.post('/web/mascotas/reportar', form.value);
     exito.value = true;
   } catch (err) {
@@ -243,27 +243,25 @@ const enviarReporte = async () => {
 onMounted(async () => {
   // Recuperar los datos del usuario logueado
   const userStorage = localStorage.getItem('usuario');
-  
+
   if (userStorage) {
     const userParseado = JSON.parse(userStorage);
-    
+
     // Autocompletar datos técnicos
     form.value.usuarioId = userParseado.id;
-    
-    // Autocompletar datos de contacto (Si existen en el storage)
+
+    // Autocompletar datos de contacto
     form.value.nombreContacto = userParseado.nombre || '';
     form.value.telefonoContacto = userParseado.telefono || '';
-    form.value.emailContacto = userParseado.correo || userParseado.email || ''; 
+    form.value.emailContacto = userParseado.correo || userParseado.email || '';
   }
 
-  await nextTick(); 
+  await nextTick();
   initMap();
 });
 </script>
 
 <style scoped>
-/* ESTILOS ORIGINALES */
-
 .nota-mapa {
   font-size: 0.9rem;
   color: #17a2b8;
@@ -273,6 +271,7 @@ onMounted(async () => {
   border-radius: 6px;
   border-left: 4px solid #17a2b8;
 }
+
 .reportar-container {
   max-width: 800px;
   margin: 0 auto;
@@ -286,7 +285,6 @@ onMounted(async () => {
 
 .header-section h2 {
   color: #007bff;
-  /* Color primario fallback */
   color: var(--color-primary, #007bff);
   font-size: 2.2rem;
 }
@@ -345,7 +343,6 @@ select:focus {
 
 .btn-submit {
   background-color: #ff9800;
-  /* Accent fallback */
   background-color: var(--color-accent, #ff9800);
   color: white;
   border: none;
@@ -457,7 +454,6 @@ select:focus {
   border-radius: 8px;
   border: 1px solid #ced4da;
   z-index: 1;
-  /* Para evitar superposición de popups de Leaflet */
 }
 
 @media (max-width: 768px) {
