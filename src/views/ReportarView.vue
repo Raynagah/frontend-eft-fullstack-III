@@ -12,7 +12,7 @@
     </div>
 
     <form v-else @submit.prevent="enviarReporte" class="formulario-reporte">
-      
+
       <div v-if="error" class="alerta error">
         {{ error }}
       </div>
@@ -56,16 +56,23 @@
           <input type="url" v-model="form.fotografiaUrl" placeholder="https://ejemplo.com/foto.jpg" />
         </div>
 
-        <div class="input-group">
-          <label>Latitud *</label>
-          <input type="number" step="any" v-model="form.latitud" required />
-        </div>
+        <div class="input-group full-width mapa-section">
+          <label>Ubicación (Haz clic en el mapa para marcar el lugar) *</label>
 
-        <div class="input-group">
-          <label>Longitud *</label>
-          <input type="number" step="any" v-model="form.longitud" required />
-        </div>
+          <div class="mapa-controles">
+            <button type="button" @click="ubicarUsuario" class="btn-ubicacion" :disabled="obteniendoUbicacion">
+              <i class="icono">📍</i> {{ obteniendoUbicacion ? 'Buscando con precisión...' : 'Usar mi ubicación actual'
+              }}
+            </button>
+            <span class="coordenadas-preview">
+              Lat: {{ form.latitud.toFixed(4) }}, Lng: {{ form.longitud.toFixed(4) }}
+            </span>
+          </div>
+          <p class="nota-mapa">💡 Si la ubicación no es exacta, <strong>arrastra el marcador</strong> o haz clic en el
+            mapa para ajustarla.</p>
 
+          <div id="mapa-seleccion" class="mapa-interactivo"></div>
+        </div>
         <div class="input-group">
           <label>Tu Nombre *</label>
           <input type="text" v-model="form.nombreContacto" required placeholder="Tu nombre y apellido" />
@@ -92,43 +99,120 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import axios from 'axios';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 // Estado de la UI
 const cargando = ref(false);
 const exito = ref(false);
 const error = ref(null);
+const obteniendoUbicacion = ref(false);
 
-// Objeto reactivo que coincide EXACTAMENTE con el WebReporteRequestDTO del BFF
+let mapaInstancia = null;
+let marcador = null;
+
+// Objeto reactivo (DTO)
 const form = ref({
-  usuarioId: 1, // Hardcodeado por ahora simulando el usuario logueado
+  usuarioId: 1,
   tipoReporte: 'PERDIDA',
   especie: '',
   raza: '',
   color: '',
   tamano: '',
   fotografiaUrl: '',
-  latitud: -41.47, // Coordenadas por defecto (Puerto Montt)
-  longitud: -72.94,
+  latitud: -41.4693, // Coordenadas por defecto (Puerto Montt)
+  longitud: -72.9423,
   nombreContacto: '',
   telefonoContacto: '',
   emailContacto: ''
 });
+
+// Inicializar el mapa de Leaflet
+const initMap = () => {
+  mapaInstancia = L.map('mapa-seleccion').setView([form.value.latitud, form.value.longitud], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(mapaInstancia);
+
+  const customIcon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  // Creamos el marcador y lo hacemos arrastrable (draggable)
+  marcador = L.marker([form.value.latitud, form.value.longitud], {
+    icon: customIcon,
+    draggable: true
+  }).addTo(mapaInstancia);
+
+  // Evento 1: Si el usuario hace clic en cualquier parte del mapa
+  mapaInstancia.on('click', (e) => {
+    const { lat, lng } = e.latlng;
+    form.value.latitud = lat;
+    form.value.longitud = lng;
+    marcador.setLatLng([lat, lng]);
+  });
+
+  // Evento 2: Si el usuario arrastra el pin directamente
+  marcador.on('dragend', (e) => {
+    const { lat, lng } = e.target.getLatLng();
+    form.value.latitud = lat;
+    form.value.longitud = lng;
+  });
+};
+
+// Función para obtener la ubicación del navegador
+const ubicarUsuario = () => {
+  if (!navigator.geolocation) {
+    alert("Tu navegador no soporta geolocalización.");
+    return;
+  }
+
+  obteniendoUbicacion.value = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      
+      form.value.latitud = lat;
+      form.value.longitud = lng;
+      
+      // Hacemos un zoom un poco más cercano (17 en vez de 16) para ver mejor la calle
+      mapaInstancia.setView([lat, lng], 17); 
+      marcador.setLatLng([lat, lng]);
+      
+      obteniendoUbicacion.value = false;
+    },
+    (err) => {
+      console.error(err);
+      alert("No pudimos obtener una ubicación precisa. Por favor, marca el punto manualmente en el mapa.");
+      obteniendoUbicacion.value = false;
+    },
+    { 
+      enableHighAccuracy: true, 
+      maximumAge: 0,       // Obliga al navegador a buscar la ubicación AHORA, sin usar caché
+      timeout: 15000       // Le da 15 segundos para triangular mejor la posición
+    } 
+  );
+};
 
 const enviarReporte = async () => {
   cargando.value = true;
   error.value = null;
 
   try {
-    // Apuntamos al endpoint POST de nuestro BFF
     await axios.post('http://localhost:8087/api/v1/web/mascotas/reportar', form.value);
-    
-    // Si llegamos aquí, el servidor respondió con un código 2xx (Éxito)
     exito.value = true;
   } catch (err) {
     console.error("Error al enviar formulario:", err);
-    // Verificamos si el BFF nos devolvió un error de validación u otro problema
     if (err.response && err.response.data) {
       error.value = "Error en los datos: Revisa los campos e intenta nuevamente.";
     } else {
@@ -138,11 +222,27 @@ const enviarReporte = async () => {
     cargando.value = false;
   }
 };
+
+onMounted(async () => {
+  await nextTick(); // Esperamos a que el HTML se dibuje
+  initMap();
+});
 </script>
 
 <style scoped>
+/* ESTILOS ORIGINALES MANTENIDOS */
+
+.nota-mapa {
+  font-size: 0.9rem;
+  color: #17a2b8;
+  margin-bottom: 1rem;
+  background-color: #e0f7fa;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #17a2b8;
+}
 .reportar-container {
-  max-width: 800px; /* Limitamos el ancho para que el formulario no sea enorme */
+  max-width: 800px;
   margin: 0 auto;
   padding: 1rem 0;
 }
@@ -153,15 +253,17 @@ const enviarReporte = async () => {
 }
 
 .header-section h2 {
-  color: var(--color-primary);
+  color: #007bff;
+  /* Color primario fallback */
+  color: var(--color-primary, #007bff);
   font-size: 2.2rem;
 }
 
 .formulario-reporte {
-  background-color: var(--color-white);
+  background-color: var(--color-white, #ffffff);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .form-grid {
@@ -182,11 +284,12 @@ const enviarReporte = async () => {
 label {
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: var(--color-text);
+  color: #333;
   font-size: 0.95rem;
 }
 
-input, select {
+input,
+select {
   padding: 0.8rem;
   border: 1px solid #ced4da;
   border-radius: 8px;
@@ -195,10 +298,12 @@ input, select {
   transition: border-color 0.3s;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(56, 138, 152, 0.2);
+  border-color: #007bff;
+  border-color: var(--color-primary, #007bff);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
 }
 
 .form-actions {
@@ -207,7 +312,9 @@ input:focus, select:focus {
 }
 
 .btn-submit {
-  background-color: var(--color-accent);
+  background-color: #ff9800;
+  /* Accent fallback */
+  background-color: var(--color-accent, #ff9800);
   color: white;
   border: none;
   padding: 1rem 3rem;
@@ -216,12 +323,12 @@ input:focus, select:focus {
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s, background-color 0.3s;
-  box-shadow: 0 4px 10px rgba(231, 142, 58, 0.3);
+  box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
 }
 
 .btn-submit:hover:not(:disabled) {
-  background-color: #cf7c30;
   transform: translateY(-2px);
+  filter: brightness(0.9);
 }
 
 .btn-submit:disabled {
@@ -253,7 +360,8 @@ input:focus, select:focus {
 .btn-volver {
   display: inline-block;
   margin-top: 1rem;
-  background-color: var(--color-primary);
+  background-color: #007bff;
+  background-color: var(--color-primary, #007bff);
   color: white;
   padding: 0.6rem 1.5rem;
   border-radius: 20px;
@@ -261,10 +369,73 @@ input:focus, select:focus {
   font-weight: 600;
 }
 
-/* Responsividad: En celulares, todos los campos ocupan el ancho completo */
+/* NUEVOS ESTILOS PARA EL MAPA */
+.mapa-section {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.mapa-controles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btn-ubicacion {
+  background-color: white;
+  border: 1px solid #ced4da;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #495057;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.btn-ubicacion:hover:not(:disabled) {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.btn-ubicacion:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.coordenadas-preview {
+  font-family: monospace;
+  color: #6c757d;
+  font-size: 0.9rem;
+  background: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.mapa-interactivo {
+  height: 350px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  z-index: 1;
+  /* Para evitar superposición de popups de Leaflet */
+}
+
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .mapa-controles {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
