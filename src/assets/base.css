@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
+
+:root {
+    /* Paleta de colores basada en el logo "Sanos y Salvos" */
+    --color-primary: #388A98; /* Teal/Turquesa */
+    --color-accent: #E78E3A; /* Naranja */
+    --color-text: #224855; /* Azul oscuro */
+    --color-bg: #F8F9FA; /* Gris claro */
+    --color-white: #FFFFFF;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Quicksand', sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+}
