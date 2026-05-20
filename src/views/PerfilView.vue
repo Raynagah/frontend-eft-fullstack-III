@@ -58,19 +58,19 @@
           
           <div class="form-row">
             <div class="form-group flex-2">
-              <label>Nombre Completo*</label>
-              <input type="text" v-model="usuario.nombre" required>
+              <label for="nombre-perfil">Nombre Completo*</label>
+              <input id="nombre-perfil" data-testid="input-nombre-perfil" type="text" v-model="usuario.nombre" required>
             </div>
             <div class="form-group flex-1">
-              <label>Edad*</label>
-              <input type="number" v-model="usuario.edad" min="18" max="100" required>
+              <label for="edad-perfil">Edad*</label>
+              <input id="edad-perfil" data-testid="input-edad-perfil" type="number" v-model="usuario.edad" min="18" max="100" required>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label>Género*</label>
-              <select v-model="usuario.genero" required>
+              <label for="genero-perfil">Género*</label>
+              <select id="genero-perfil" data-testid="input-genero-perfil" v-model="usuario.genero" required>
                 <option value="" disabled>Selecciona...</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
@@ -79,19 +79,19 @@
               </select>
             </div>
             <div class="form-group flex-1">
-              <label>Teléfono*</label>
-              <input type="tel" v-model="usuario.telefono" required>
+              <label for="telefono-perfil">Teléfono*</label>
+              <input id="telefono-perfil" data-testid="input-telefono-perfil" type="tel" v-model="usuario.telefono" required>
             </div>
           </div>
 
           <div class="form-group">
-            <label>Ocupación</label>
-            <input type="text" v-model="usuario.ocupacion" placeholder="Ej: Veterinario, Estudiante...">
+            <label for="ocupacion-perfil">Ocupación</label>
+            <input id="ocupacion-perfil" data-testid="input-ocupacion-perfil" type="text" v-model="usuario.ocupacion" placeholder="Ej: Veterinario, Estudiante...">
           </div>
 
           <div class="form-group">
-            <label>Dirección</label>
-            <input type="text" v-model="usuario.direccion" placeholder="Calle, Número, Ciudad">
+            <label for="direccion-perfil">Dirección</label>
+            <input id="direccion-perfil" data-testid="input-direccion-perfil" type="text" v-model="usuario.direccion" placeholder="Calle, Número, Ciudad">
           </div>
 
           <div v-if="errorDatos" class="alert error">{{ errorDatos }}</div>
@@ -110,7 +110,7 @@
 
     <div v-if="tabActual === 'reportes'" class="tab-content fade-in">
        <div v-if="misReportes.length === 0" class="empty-state">
-          <h3>No tienes reportes activos</h3>
+         <h3>No tienes reportes activos</h3>
        </div>
        <div v-else class="mascotas-grid">
           <MascotaCard v-for="m in misReportes" :key="m.id" :mascota="m" />
@@ -233,7 +233,6 @@ const cargarMisReportes = async () => {
 </script>
 
 <style scoped>
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -354,7 +353,16 @@ const cargarMisReportes = async () => {
 
 .btn-guardar {
   flex: 2;
-  /* (Mismos estilos que ya tenías para btn-guardar) */
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--color-primary, #007bff);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.3s;
 }
 
 .mt-2 {
@@ -496,19 +504,6 @@ const cargarMisReportes = async () => {
     background-color: #e9ecef;
     color: #6c757d;
     cursor: not-allowed;
-}
-
-.btn-guardar {
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--color-primary, #007bff);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.3s;
 }
 
 .btn-guardar:hover:not(:disabled) {

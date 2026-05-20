@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  test-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vue_vitest_runner
+    # Cambiado a solo --ui, la configuración de red ya está en el vite.config.js
+    command: npx vitest --ui
+    ports:
+      - "51204:51204"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test

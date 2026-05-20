@@ -14,6 +14,7 @@
             <input 
               type="text" 
               id="nombre" 
+              data-testid="registro-nombre"
               v-model="formulario.nombre" 
               placeholder="Ej: Juan Pérez" 
               maxlength="100"
@@ -23,29 +24,29 @@
           </div>
           <div class="input-group">
             <label for="correo">Correo Electrónico</label>
-            <input type="email" id="correo" v-model="formulario.correo" placeholder="juan@correo.com" required />
+            <input type="email" id="correo" data-testid="registro-correo" v-model="formulario.correo" placeholder="juan@correo.com" required />
           </div>
         </div>
 
         <div class="row">
           <div class="input-group">
             <label for="password">Contraseña</label>
-            <input type="password" id="password" v-model="formulario.password" placeholder="••••••••" required />
+            <input type="password" id="password" data-testid="registro-password" v-model="formulario.password" placeholder="••••••••" required />
           </div>
           <div class="input-group">
             <label for="telefono">Teléfono</label>
-            <input type="text" id="telefono" v-model="formulario.telefono" placeholder="+569..." required />
+            <input type="text" id="telefono" data-testid="registro-telefono" v-model="formulario.telefono" placeholder="+569..." required />
           </div>
         </div>
 
         <div class="row">
           <div class="input-group">
             <label for="edad">Edad</label>
-            <input type="number" id="edad" v-model="formulario.edad" min="18" max="120" required />
+            <input type="number" id="edad" data-testid="registro-edad" v-model="formulario.edad" min="18" max="120" required />
           </div>
           <div class="input-group">
             <label for="genero">Género</label>
-            <select id="genero" v-model="formulario.genero" required>
+            <select id="genero" data-testid="registro-genero" v-model="formulario.genero" required>
               <option value="" disabled>Seleccione...</option>
               <option value="Masculino">Masculino</option>
               <option value="Femenino">Femenino</option>
@@ -58,7 +59,7 @@
         <div class="row">
           <div class="input-group">
             <label for="ocupacion">Ocupación</label>
-            <select id="ocupacion" v-model="formulario.ocupacion" required>
+            <select id="ocupacion" data-testid="registro-ocupacion" v-model="formulario.ocupacion" required>
               <option value="" disabled>Seleccione...</option>
               <option value="ESTUDIANTE">Estudiante</option>
               <option value="INSTITUCION">Institución / ONG</option>
@@ -67,7 +68,7 @@
           </div>
           <div class="input-group">
             <label for="direccion">Dirección</label>
-            <input type="text" id="direccion" v-model="formulario.direccion" placeholder="Calle, Ciudad" required />
+            <input type="text" id="direccion" data-testid="registro-direccion" v-model="formulario.direccion" placeholder="Calle, Ciudad" required />
           </div>
         </div>
 
