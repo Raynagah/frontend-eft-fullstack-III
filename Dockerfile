@@ -1,17 +1,21 @@
-# Usamos una imagen ligera de Node.js
+# Usa una imagen oficial y ligera de Node.js
 FROM node:20-alpine
 
-# Establecemos el directorio de trabajo dentro del contenedor
+# Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiamos los archivos de dependencias primero (para aprovechar la caché de Docker)
+# Copia primero los archivos de dependencias para aprovechar la caché de Docker
 COPY package*.json ./
 
-# Instalamos las dependencias
+# Instala las dependencias
 RUN npm install
 
-# Copiamos el resto del código del frontend
+# Copia el resto del código fuente del proyecto
 COPY . .
 
-# Comando por defecto al levantar el contenedor (corre las pruebas una sola vez)
-CMD ["npx", "vitest", "run"]
+# Expone el puerto por defecto de Vite
+EXPOSE 5173
+
+# Comando para iniciar el servidor de desarrollo.
+# El flag "--host" es OBLIGATORIO en Vite dentro de Docker para exponer la red hacia tu navegador local.
+CMD ["npm", "run", "dev", "--", "--host"]
