@@ -18,7 +18,7 @@ vi.mock('../components/mascotas/MascotaCard.vue', () => ({
 
 describe('Vista: PerfilView.vue', () => {
   const mockUsuario = {
-    id: 1, nombre: 'Ana Gómez', correo: 'ana@test.com', telefono: '123456', rol: 'ADMIN'
+    id: 1, nombre: 'Ana Gómez', correo: 'ana@test.com', telefono: '123456', rol: 'ADMIN',edad: 28, genero: 'Femenino'
   };
 
   beforeEach(() => {
@@ -34,7 +34,11 @@ describe('Vista: PerfilView.vue', () => {
   });
 
   it('debe cargar y mostrar los datos del usuario al montarse', async () => {
-    render(PerfilView);
+    render(PerfilView, {
+      global: {
+        stubs: ['rouer-link']
+      }
+    });
 
     // Esperamos a que los datos se rendericen
     await waitFor(() => {
@@ -48,29 +52,33 @@ describe('Vista: PerfilView.vue', () => {
     // Simulamos la respuesta del PUT (guardado)
     api.put.mockResolvedValueOnce({ data: { ...mockUsuario, nombre: 'Ana Maria' } });
 
-    render(PerfilView);
+    render(PerfilView, {
+      global: {
+        stubs: ['router-link']
+      }
+    });
     await waitFor(() => screen.getByText('Ana Gómez'));
 
     // Entramos al modo edición
     const btnEditar = screen.getByRole('button', { name: /Editar Perfil/i });
     await fireEvent.click(btnEditar);
 
-    // Modificamos el nombre
-    const inputNombre = screen.getByLabelText('Nombre Completo*');
+    // Modificamos el nombre usando el testid
+    const inputNombre = screen.getByTestId('input-nombre-perfil');
     await fireEvent.update(inputNombre, 'Ana Maria');
 
     // Guardamos
     const btnGuardar = screen.getByRole('button', { name: /Guardar Cambios/i });
     await fireEvent.click(btnGuardar);
 
-    // Verificamos que se llamó a la API con los datos correctos
-    expect(api.put).toHaveBeenCalledWith('/web/usuarios/1', expect.objectContaining({
-      nombre: 'Ana Maria'
-    }));
-
-    // Verificamos el mensaje de éxito
+    // 1. PRIMERO esperamos a que aparezca el mensaje de éxito en el DOM
     await waitFor(() => {
       expect(screen.getByText('¡Perfil actualizado con éxito!')).toBeTruthy();
     });
+
+    // 2. LUEGO verificamos la API. Como el mensaje ya apareció, la API ya fue llamada.
+    expect(api.put).toHaveBeenCalledWith('/web/usuarios/1', expect.objectContaining({
+      nombre: 'Ana Maria'
+    }));
   });
 });

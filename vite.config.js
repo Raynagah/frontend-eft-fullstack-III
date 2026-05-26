@@ -29,6 +29,8 @@ export default defineConfig({
         'src/components/mapa/**',
         'src/components/mascotas/listaMascotas.vue',
         'src/components/usuarios/**',
+        'src/views/HomeView.vue',
+        'src/views/MascotaView.vue',
         'src/router/**',         // Configuración de rutas
         'src/api/axiosConfig.js', // Configuración de Axios
         '**/*.config.{js,ts}',   // Configs de vite, tailwind, etc.

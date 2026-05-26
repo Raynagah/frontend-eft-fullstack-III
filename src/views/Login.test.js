@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/vue'; // <-- Añadimos waitFor
-import Login from './Login.vue'; 
+import Login from './login.vue'; 
 
 // 1. Mockeamos el Vue Router
 const mockPush = vi.fn();
@@ -33,7 +33,10 @@ describe('Componente: Login.vue', () => {
 
   // --- TEST 1: Renderizado Inicial ---
   it('debe renderizar correctamente la vista de inicio de sesión', () => {
-    render(Login);
+    render(Login, {
+      global: {
+        stubs: ['router-link']
+      }}),
     expect(screen.getByText('Sanos y Salvos')).toBeTruthy();
     expect(screen.getByText('Bienvenido de vuelta')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeTruthy();
@@ -41,7 +44,10 @@ describe('Componente: Login.vue', () => {
 
   // --- TEST 2: Flujo Feliz (Login Exitoso) ---
   it('debe iniciar sesión, guardar credenciales, mostrar alerta y redirigir', async () => {
-    render(Login);
+    render(Login, {
+      global: {
+        stubs: ['router-link']
+      }});
 
     const mockUsuario = { id: 1, nombre: 'Andrés' };
     api.post.mockResolvedValueOnce({
@@ -77,7 +83,10 @@ describe('Componente: Login.vue', () => {
 
   // --- TEST 3: Flujo de Error (Credenciales Inválidas 401/403) ---
   it('debe mostrar mensaje de credenciales incorrectas si el servidor responde con 401', async () => {
-    render(Login);
+    render(Login, {
+      global: {
+        stubs: ['router-link']
+      }});
 
     api.post.mockRejectedValueOnce({
       response: { status: 401 }
@@ -93,7 +102,10 @@ describe('Componente: Login.vue', () => {
 
   // --- TEST 4: Flujo de Error (Error de Servidor 500) ---
   it('debe mostrar un mensaje de error genérico si hay un error de conexión', async () => {
-    render(Login);
+    render(Login, {
+      global: {
+        stubs: ['router-link']
+      }});
 
     api.post.mockRejectedValueOnce({
       response: { status: 500 }
@@ -107,7 +119,10 @@ describe('Componente: Login.vue', () => {
 
   // --- TEST 5: Estado de Carga ---
   it('debe cambiar el texto del botón y deshabilitarlo mientras carga', async () => {
-    render(Login);
+    render(Login, {
+      global: {
+        stubs: ['router-link']
+      }});
 
     let resolveApi;
     const promise = new Promise((resolve) => { resolveApi = resolve; });

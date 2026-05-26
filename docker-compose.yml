@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  # Servicio 1: Tu aplicación Frontend (Despliegue/Desarrollo)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vue_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    # No necesitamos declarar "command" aquí porque automáticamente 
+    # usará el CMD de tu Dockerfile: ["npm", "run", "dev", "--", "--host"]
+
+  # Servicio 2: Tu entorno de pruebas (Vitest UI)
   test-frontend:
     build:
       context: .

@@ -20,7 +20,7 @@
       <div class="form-grid">
         <div class="input-group full-width">
           <label>¿Qué deseas reportar? *</label>
-          <select v-model="form.tipoReporte" required>
+          <select v-model="form.tipoReporte" data-testid="select-tipo-reporte" required>
             <option value="PERDIDA">Perdí a mi mascota</option>
             <option value="ENCONTRADA">Encontré una mascota</option>
           </select>
@@ -30,13 +30,13 @@
           <label>
             {{ form.tipoReporte === 'PERDIDA' ? 'Nombre de tu mascota *' : 'Nombre (si tiene collar/placa)' }}
           </label>
-          <input type="text" v-model="form.nombre" :required="form.tipoReporte === 'PERDIDA'"
+          <input type="text" v-model="form.nombre" data-testid="input-nombre-mascota" :required="form.tipoReporte === 'PERDIDA'"
             placeholder="Ej: Max, Luna..." />
         </div>
 
         <div class="input-group">
           <label>Especie *</label>
-          <select v-model="form.especie" required>
+          <select v-model="form.especie" data-testid="select-especie" required>
             <option value="" disabled selected>Selecciona una opción</option>
             <option value="Perro">Perro</option>
             <option value="Gato">Gato</option>
@@ -50,7 +50,7 @@
 
         <div class="input-group">
           <label>Color Principal *</label>
-          <input type="text" v-model="form.color" required placeholder="Ej: Negro con manchas blancas" />
+          <input type="text" v-model="form.color" data-testid="input-color" required placeholder="Ej: Negro con manchas blancas" />
         </div>
 
         <div class="input-group">

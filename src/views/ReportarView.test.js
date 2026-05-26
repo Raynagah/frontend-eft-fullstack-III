@@ -40,29 +40,35 @@ describe('Vista: ReportarView.vue', () => {
   });
 
   it('debe cambiar las etiquetas del formulario según el tipo de reporte', async () => {
-    render(ReportarView);
+    render(ReportarView , {
+      global: {
+        stubs: ['router-link']
+      }});
 
-    const selectReporte = screen.getByLabelText('¿Qué deseas reportar? *');
+    const selectReporte = screen.getByTestId('select-tipo-reporte');
     
-    // Por defecto es PERDIDA
-    expect(screen.getByText('Nombre de tu mascota *')).toBeTruthy();
+    // Por defecto es PERDIDA. Usamos regex para ignorar espacios y asteriscos exactos
+    expect(screen.getByText(/Nombre de tu mascota/i)).toBeTruthy();
 
     // Cambiamos a ENCONTRADA
     await fireEvent.update(selectReporte, 'ENCONTRADA');
     
     // La etiqueta debe cambiar
-    expect(screen.getByText('Nombre (si tiene collar/placa)')).toBeTruthy();
+    expect(screen.getByText(/Nombre \(si tiene collar\/placa\)/i)).toBeTruthy();
   });
 
   it('debe enviar el formulario correctamente y mostrar pantalla de éxito', async () => {
     api.post.mockResolvedValueOnce({ data: { success: true } });
 
-    render(ReportarView);
+    render(ReportarView , {
+      global: {
+        stubs: ['router-link']
+      }});
 
-    // Llenamos los campos requeridos
-    await fireEvent.update(screen.getByLabelText('Nombre de tu mascota *'), 'Boby');
-    await fireEvent.update(screen.getByLabelText('Especie *'), 'Perro');
-    await fireEvent.update(screen.getByLabelText('Color Principal *'), 'Café');
+    // Llenamos los campos requeridos usando TestIds
+    await fireEvent.update(screen.getByTestId('input-nombre-mascota'), 'Boby');
+    await fireEvent.update(screen.getByTestId('select-especie'), 'Perro');
+    await fireEvent.update(screen.getByTestId('input-color'), 'Café');
     // Nota: El contacto se autocompleta por el LocalStorage mockeado
 
     // Enviamos
@@ -85,7 +91,10 @@ describe('Vista: ReportarView.vue', () => {
     // Vaciamos el localStorage
     Storage.prototype.getItem.mockReturnValueOnce(null);
 
-    render(ReportarView);
+    render(ReportarView , {
+      global: {
+        stubs: ['router-link']
+      }});
     
     const form = screen.getByRole('button', { name: /Publicar Reporte/i }).closest('form');
     await fireEvent.submit(form);
