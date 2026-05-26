@@ -1,84 +1,192 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/vue';
+import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import api from '../api/axiosConfig.js'; // Asegúrate de que la ruta sea correcta
 import PerfilView from './PerfilView.vue';
-import api from '../api/axiosConfig.js';
 
-// Mocks
+// 1. Desmontaje automático entre pruebas
+enableAutoUnmount(afterEach);
+
+// 2. Mock de Axios (API)
 vi.mock('../api/axiosConfig.js', () => ({
-  default: { get: vi.fn(), put: vi.fn() }
-}));
-
-vi.mock('../components/mascotas/MascotaCard.vue', () => ({
   default: {
-    name: 'MascotaCard',
-    props: ['mascota'],
-    template: '<div data-testid="mascota-card">{{ mascota.nombre }}</div>'
+    get: vi.fn(),
+    put: vi.fn(),
   }
 }));
 
-describe('Vista: PerfilView.vue', () => {
-  const mockUsuario = {
-    id: 1, nombre: 'Ana Gómez', correo: 'ana@test.com', telefono: '123456', rol: 'ADMIN',edad: 28, genero: 'Femenino'
+describe('PerfilView.vue', () => {
+  // Mock de datos del usuario en LocalStorage
+  const mockUsuarioStorage = { id: 1, nombre: 'Juan', correo: 'juan@test.com' };
+  
+  // Mock de datos devueltos por la API
+  const mockDatosApi = {
+    nombre: 'Juan Perez',
+    edad: 30,
+    genero: 'Masculino',
+    telefono: '123456789',
+    ocupacion: 'Ingeniero',
+    direccion: 'Calle Falsa 123',
+    correo: 'juan@test.com',
+    fotoUrl: ''
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Simulamos un usuario en el localStorage
-    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify({ id: 1 }));
+    // Limpiamos y preparamos el localStorage antes de cada test
+    localStorage.clear();
+    localStorage.setItem('usuario', JSON.stringify(mockUsuarioStorage));
+  });
+
+  // Función helper para montar el componente de manera limpia
+  const mountComponent = () => {
+    return mount(PerfilView, {
+      global: {
+        stubs: {
+          // Sustituimos el componente hijo para evitar errores por dependencias
+          MascotaCard: true 
+        }
+      }
+    });
+  };
+
+  it('1. Carga los datos personales y reportes al montar exitosamente', async () => {
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) {
+        return Promise.resolve({ data: [{ id: 101, nombre: 'Firulais' }] });
+      }
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
     
-    // Configuramos respuestas exitosas por defecto
+    // Verificamos el estado de carga inicial
+    expect(wrapper.text()).toContain('Cargando...');
+
+    await flushPromises();
+
+    // Verifica que se hicieron las peticiones con el ID correcto extraído del localStorage
+    expect(api.get).toHaveBeenCalledWith('/web/usuarios/1');
+    expect(api.get).toHaveBeenCalledWith('/web/usuarios/1/reportes');
+
+    // Verifica que los datos se renderizaron correctamente en la vista de lectura
+    expect(wrapper.text()).toContain('Juan Perez');
+    expect(wrapper.text()).toContain('Ingeniero');
+    
+    // Verifica la propiedad computada inicialNombre
+    expect(wrapper.find('.avatar-circle').text()).toBe('J');
+  });
+
+  it('2. Maneja errores al cargar los datos personales', async () => {
+    // Hacemos que la petición de datos principales falle deliberadamente
     api.get.mockImplementation((url) => {
       if (url.includes('/reportes')) return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: mockUsuario });
+      return Promise.reject(new Error('Fallo API'));
     });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Verificamos que se asigna y muestra el mensaje de error en la vista
+    expect(wrapper.text()).toContain('Error al cargar datos.');
   });
 
-  it('debe cargar y mostrar los datos del usuario al montarse', async () => {
-    render(PerfilView, {
-      global: {
-        stubs: ['rouer-link']
-      }
+  it('3. Permite iniciar y cancelar la edición restaurando los datos originales', async () => {
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: mockDatosApi });
     });
 
-    // Esperamos a que los datos se rendericen
-    await waitFor(() => {
-      expect(screen.getByText('Ana Gómez')).toBeTruthy();
-      expect(screen.getByText('ana@test.com')).toBeTruthy();
-      expect(screen.getByText('ADMIN')).toBeTruthy(); // Badge de rol
-    });
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // 1. Iniciamos el modo edición clickeando el botón correspondiente
+    const btnEditar = wrapper.find('.btn-editar');
+    await btnEditar.trigger('click');
+    
+    // Verificamos la aparición del formulario
+    expect(wrapper.find('form.perfil-form').exists()).toBe(true);
+
+    // 2. Modificamos un dato a través de su data-testid
+    const inputNombre = wrapper.find('[data-testid="input-nombre-perfil"]');
+    await inputNombre.setValue('Nombre Modificado');
+    expect(inputNombre.element.value).toBe('Nombre Modificado');
+
+    // 3. Cancelamos la edición usando el botón de cancelar
+    const btnCancelar = wrapper.find('.btn-cancelar');
+    await btnCancelar.trigger('click');
+
+    // Verificamos que salimos del formulario y que el valor regresó al estado inicial
+    expect(wrapper.find('form.perfil-form').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Juan Perez'); 
+    expect(wrapper.text()).not.toContain('Nombre Modificado');
   });
 
-  it('debe cambiar al modo edición y guardar los cambios', async () => {
-    // Simulamos la respuesta del PUT (guardado)
-    api.put.mockResolvedValueOnce({ data: { ...mockUsuario, nombre: 'Ana Maria' } });
-
-    render(PerfilView, {
-      global: {
-        stubs: ['router-link']
-      }
+  it('4. Guarda los datos exitosamente y sale del modo edición', async () => {
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: mockDatosApi });
     });
-    await waitFor(() => screen.getByText('Ana Gómez'));
+    
+    // Respuesta esperada tras el PUT exitoso
+    const mockRespuestaPut = { ...mockDatosApi, nombre: 'Juan Actualizado' };
+    api.put.mockResolvedValue({ data: mockRespuestaPut });
 
-    // Entramos al modo edición
-    const btnEditar = screen.getByRole('button', { name: /Editar Perfil/i });
-    await fireEvent.click(btnEditar);
+    const wrapper = mountComponent();
+    await flushPromises();
 
-    // Modificamos el nombre usando el testid
-    const inputNombre = screen.getByTestId('input-nombre-perfil');
-    await fireEvent.update(inputNombre, 'Ana Maria');
+    // Pasamos a edición
+    await wrapper.find('.btn-editar').trigger('click');
 
-    // Guardamos
-    const btnGuardar = screen.getByRole('button', { name: /Guardar Cambios/i });
-    await fireEvent.click(btnGuardar);
+    // Enviamos el formulario
+    const form = wrapper.find('form.perfil-form');
+    await form.trigger('submit.prevent');
+    await flushPromises();
 
-    // 1. PRIMERO esperamos a que aparezca el mensaje de éxito en el DOM
-    await waitFor(() => {
-      expect(screen.getByText('¡Perfil actualizado con éxito!')).toBeTruthy();
+    // Verificaciones de peticiones de actualización
+    expect(api.put).toHaveBeenCalledTimes(1);
+    expect(api.put).toHaveBeenCalledWith('/web/usuarios/1', expect.any(Object));
+    
+    // Verifica el fin de la edición y la presencia del mensaje de éxito en pantalla
+    expect(wrapper.find('form.perfil-form').exists()).toBe(false);
+    expect(wrapper.text()).toContain('¡Perfil actualizado con éxito!');
+    expect(wrapper.text()).toContain('Juan Actualizado');
+  });
+
+  it('5. Muestra error si falla al guardar los datos', async () => {
+    // Silenciamos console.error para que el log del catch no ensucie el output de la terminal
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+    
+    // Simulamos un error de validación del backend durante el PUT
+    api.put.mockRejectedValue(new Error('Error de validación'));
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    await wrapper.find('.btn-editar').trigger('click');
+    await wrapper.find('form.perfil-form').trigger('submit.prevent');
+    await flushPromises();
+
+    // Debería mantenerse en el formulario y desplegar la alerta de error esperada
+    expect(wrapper.find('form.perfil-form').exists()).toBe(true);
+    expect(wrapper.text()).toContain('No se pudo actualizar. Revisa que todos los campos obligatorios (*) estén llenos.');
+  });
+
+  it('6. Muestra un avatar genérico si el usuario carece de nombre', async () => {
+    // Caso de borde: API devuelve un nombre nulo
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: { ...mockDatosApi, nombre: null } });
     });
 
-    // 2. LUEGO verificamos la API. Como el mensaje ya apareció, la API ya fue llamada.
-    expect(api.put).toHaveBeenCalledWith('/web/usuarios/1', expect.objectContaining({
-      nombre: 'Ana Maria'
-    }));
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Comprobamos la caída al emoji de silueta genérico
+    expect(wrapper.find('.avatar-circle').text()).toBe('👤');
   });
 });

@@ -20,6 +20,7 @@
         <div v-if="cargandoDatos" class="loader">Cargando...</div>
         
         <div v-else-if="!modoEdicion" class="perfil-view">
+          <div v-if="errorDatos" class="alert error mb-3">{{ errorDatos }}</div>
           <div class="info-grid">
             <div class="info-item">
               <span class="label">Nombre Completo</span>
