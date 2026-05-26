@@ -1,18 +1,17 @@
 version: '3.8'
 
 services:
-  frontend:
+  test-frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vue_vite_frontend
+    container_name: vue_vitest_runner
+    # Cambiado a solo --ui, la configuración de red ya está en el vite.config.js
+    command: npx vitest --ui
     ports:
-      - "5173:5173"
+      - "51204:51204"
     volumes:
-      # Sincroniza tu código local con la carpeta /app del contenedor (Hot-Reload)
       - .:/app
-      # Crea un volumen anónimo para node_modules para no interferir con tu sistema local
       - /app/node_modules
     environment:
-      # Variable útil si estás usando Windows/WSL para asegurar que Vite detecte los cambios de archivos
-      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=test
