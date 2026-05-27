@@ -7,7 +7,7 @@
 
     <div v-else-if="error" class="estado-mensaje error">
       <p>{{ error }}</p>
-      <button @click="$router.push('/mascotas')" class="btn-volver">Volver al Dashboard</button>
+      <button @click="irAMascotas" class="btn-volver" data-test="btn-volver">Volver al Dashboard</button>
     </div>
 
     <div v-else-if="mascota" class="ficha-mascota">
@@ -87,7 +87,7 @@
       </div>
 
       <div class="ficha-footer">
-        <button @click="$router.push('/mascotas')" class="btn-secundario">Volver a Mascotas</button>
+        <button @click="irAMascotas" class="btn-secundario" data-test="btn-volver">Volver a Mascotas</button>
       </div>
 
     </div>
@@ -102,7 +102,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const router = useRouter();
-const route = useRoute(); // Usamos useRoute para leer el ID dinámicamente siempre
+const route = useRoute();
 
 // Estado reactivo
 const mascota = ref(null);
@@ -124,6 +124,11 @@ const estadoClase = computed(() => {
   return 'badge-default';
 });
 
+// Lógica de navegación explícita
+const irAMascotas = () => {
+  router.push('/mascotas');
+};
+
 // Lógica del Mapa
 const initMap = () => {
   const lat = obtenerLatitud.value;
@@ -132,7 +137,7 @@ const initMap = () => {
   if (!lat || !lng) return;
 
   const mapContainer = document.getElementById('mapa-mascota');
-  if (!mapContainer) return; // Si el HTML no existe aún, evitamos que Leaflet crashee
+  if (!mapContainer) return;
 
   if (mapaInstancia) {
     mapaInstancia.remove();
@@ -163,13 +168,12 @@ const initMap = () => {
     console.error("Error al inicializar el mapa:", err);
   }
 };
+
 const tituloAmigable = computed(() => {
-  // 1. Si la mascota tiene un nombre válido, lo mostramos directo
   if (mascota.value.nombre && mascota.value.nombre.trim() !== '') {
     return mascota.value.nombre;
   }
   
-  // 2. Si no tiene nombre (suele pasar en las ENCONTRADAS), armamos el título
   const especie = mascota.value.especie ? mascota.value.especie.toLowerCase() : 'peludito';
   
   if (mascota.value.tipoReporte === 'ENCONTRADA') {
@@ -177,7 +181,6 @@ const tituloAmigable = computed(() => {
     if (especie === 'gato') return 'Gatito encontrado';
     return `${mascota.value.especie} encontrad@`;
   } else {
-    // Por si es PERDIDA y alguien logró saltarse la validación del nombre
     return `Buscamos a este ${especie}`;
   }
 });
@@ -187,16 +190,14 @@ const cargarDetalle = async () => {
   cargando.value = true;
   error.value = null;
 
-  // Tomamos el ID directamente de la ruta activa, es más seguro que usar props
   const idMascota = route.params.id; 
 
   try {
     const response = await axios.get(`http://localhost:8087/api/v1/web/mascotas/detalle/${idMascota}`);
     mascota.value = response.data;
     
-    // Dibujar el mapa DESPUÉS de que Vue procese el v-if="mascota"
     await nextTick();
-    setTimeout(() => { initMap(); }, 100); // Pequeño retraso extra de seguridad para Leaflet
+    initMap();
 
   } catch (err) {
     console.error("Error al cargar detalle:", err);
@@ -217,7 +218,7 @@ const verDetalleMatch = (id) => {
   router.push(`/mascotas/${id}`);
 };
 
-// Detectar cambios en la URL (si hacemos clic en una coincidencia, recargar)
+// Detectar cambios en la URL
 watch(() => route.params.id, (nuevoId) => {
   if (nuevoId) {
     cargarDetalle();

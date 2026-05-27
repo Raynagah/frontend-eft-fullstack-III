@@ -24,24 +24,24 @@ export default defineConfig({
       exclude: [
         'node_modules/**',
         'dist/**',
-        'src/main.js',          // Inicializador de Vue
+        'src/main.js',            // Inicializador de Vue
         'src/containers/**',
         'src/components/mapa/**',
         'src/components/mascotas/listaMascotas.vue',
         'src/components/usuarios/**',
         'src/views/HomeView.vue',
         'src/views/MascotaView.vue',
-        'src/router/**',         // Configuración de rutas
+        'src/router/**',          // Configuración de rutas
         'src/api/axiosConfig.js', // Configuración de Axios
-        '**/*.config.{js,ts}',   // Configs de vite, tailwind, etc.
-        '**/*.test.js'           // Los mismos archivos de pruebas
+        '**/*.config.{js,ts}',    // Configs de vite, tailwind, etc.
+        '**/*.test.js'            // Los mismos archivos de pruebas
       ],
       reporter: ['text', 'html'], // 'html' genera una web interactiva propia
       thresholds: {
-        statements: 80,
-        functions: 80,
-        lines: 80,
-        branches: 70 // Tu límite específico para ramas
+        statements: 90,
+        functions: 90,
+        lines: 90,
+        branches: 90 // Límite específico para ramas
       }
     }
   }

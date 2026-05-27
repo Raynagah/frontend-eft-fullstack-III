@@ -165,7 +165,7 @@ const initMap = () => {
     draggable: true
   }).addTo(mapaInstancia);
 
-  mapaInstancia.on('click', (e) => {
+  mapaInstancia?.on('click', (e) => {
     const { lat, lng } = e.latlng;
     form.value.latitud = lat;
     form.value.longitud = lng;

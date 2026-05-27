@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/vue';
-import RegistroView from './RegistroView.vue';
+import RegistroView from '../views/RegistroView.vue';
 import api from '../api/axiosConfig.js';
 
 // Mocks

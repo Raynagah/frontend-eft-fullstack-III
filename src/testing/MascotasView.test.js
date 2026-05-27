@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/vue';
-import MascotasView from './MascotasView.vue'; // Ajustar la ruta si es necesario
+import MascotasView from '../views/MascotasView.vue'; // Ajustar la ruta si es necesario
 
 // 1. Mockeamos la configuración de Axios
 vi.mock('../api/axiosConfig.js', () => ({

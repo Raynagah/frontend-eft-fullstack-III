@@ -1,7 +1,7 @@
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import api from '../api/axiosConfig.js'; // Asegúrate de que la ruta sea correcta
-import PerfilView from './PerfilView.vue';
+import PerfilView from '../views/PerfilView.vue';
 
 // 1. Desmontaje automático entre pruebas
 enableAutoUnmount(afterEach);
@@ -188,5 +188,62 @@ describe('PerfilView.vue', () => {
 
     // Comprobamos la caída al emoji de silueta genérico
     expect(wrapper.find('.avatar-circle').text()).toBe('👤');
+  });
+
+  it('7. Interactúa con todos los inputs y avanza el temporizador de éxito para cubrir v-models y setTimeout', async () => {
+    // 1. Configuramos cronómetros falsos para capturar el callback del setTimeout
+    vi.useFakeTimers();
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+    api.put.mockResolvedValue({ data: { ...mockDatosApi, nombre: 'Juan Modificado' } });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Pasamos al modo edición
+    await wrapper.find('.btn-editar').trigger('click');
+
+    // 2. Interactuamos con absolutamente TODOS los v-model pendientes
+    await wrapper.find('[data-testid="input-nombre-perfil"]').setValue('Juan Modificado');
+    await wrapper.find('[data-testid="input-edad-perfil"]').setValue(35);
+    await wrapper.find('[data-testid="input-genero-perfil"]').setValue('Femenino');
+    await wrapper.find('[data-testid="input-telefono-perfil"]').setValue('987654321');
+    await wrapper.find('[data-testid="input-ocupacion-perfil"]').setValue('Diseñador');
+    await wrapper.find('[data-testid="input-direccion-perfil"]').setValue('Avenida Siempre Viva 742');
+
+    // Enviamos el formulario
+    await wrapper.find('form.perfil-form').trigger('submit.prevent');
+    await flushPromises();
+
+    // Verificamos que apareció el cartel de éxito
+    expect(wrapper.text()).toContain('¡Perfil actualizado con éxito!');
+
+    // 3. Viajamos 3 segundos en el futuro para forzar la ejecución de la función dentro del setTimeout
+    vi.advanceTimersByTime(3000);
+    await wrapper.vm.$nextTick(); // Le damos un ciclo a Vue para procesar la desaparición del mensaje
+
+    // Restauramos los cronómetros reales de Vitest
+    vi.useRealTimers();
+  });
+
+  it('8. Captura el error en el bloque catch al fallar la carga de mis reportes', async () => {
+    // Silenciamos el console.error esperado en la terminal
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) {
+        return Promise.reject(new Error('Error al traer reportes de mascotas'));
+      }
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Confirmamos que el catch atrapó la excepción y llamó al console.error
+    expect(console.error).toHaveBeenCalled();
   });
 });
