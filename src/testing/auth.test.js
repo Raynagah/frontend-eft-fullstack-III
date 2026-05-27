@@ -1,7 +1,7 @@
 import { setActivePinia, createPinia } from 'pinia';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
-import { useAuthStore } from './auth'; // Ajusta la ruta si es necesario
+import { useAuthStore } from '../stores/auth'; // Ajusta la ruta si es necesario
 
 // 1. Mockeamos Axios para interceptar las llamadas HTTP
 vi.mock('axios', () => {

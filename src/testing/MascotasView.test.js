@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/vue';
-import MascotasView from './MascotasView.vue'; // Ajusta la ruta si es necesario
+import MascotasView from '../views/MascotasView.vue'; // Ajustar la ruta si es necesario
 
 // 1. Mockeamos la configuración de Axios
 vi.mock('../api/axiosConfig.js', () => ({
@@ -32,16 +32,20 @@ describe('Vista: MascotasView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Silenciamos los console.error y console.log esperados
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => { });
+    vi.spyOn(console, 'log').mockImplementation(() => { });
   });
 
   // --- TEST 1: Estado de Carga ---
   it('debe mostrar el mensaje de carga al montarse', () => {
     // Congelamos la respuesta de la API devolviendo una promesa sin resolver
-    api.get.mockReturnValue(new Promise(() => {}));
-    
-    render(MascotasView);
+    api.get.mockReturnValue(new Promise(() => { }));
+
+    render(MascotasView, {
+      global: {
+        stubs: ['router-link']
+      }
+    });
 
     expect(screen.getByText('Cargando información desde el orquestador...')).toBeTruthy();
   });
@@ -53,7 +57,11 @@ describe('Vista: MascotasView.vue', () => {
       data: { content: mockMascotas }
     });
 
-    render(MascotasView);
+    render(MascotasView, {
+      global: {
+        stubs: ['router-link']
+      }
+    });
 
     // Esperamos a que el texto de carga desaparezca
     await waitFor(() => {
@@ -63,7 +71,7 @@ describe('Vista: MascotasView.vue', () => {
     // Verificamos que se renderizó el componente hijo la cantidad correcta de veces
     const cards = screen.getAllByTestId('mascota-card');
     expect(cards.length).toBe(3);
-    
+
     // Verificamos que se llamó a la ruta correcta
     expect(api.get).toHaveBeenCalledWith('/web/mascotas');
   });
@@ -73,7 +81,11 @@ describe('Vista: MascotasView.vue', () => {
     // 1er intento: Falla
     api.get.mockRejectedValueOnce(new Error('Error 500'));
 
-    render(MascotasView);
+    render(MascotasView, {
+      global: {
+        stubs: ['router-link']
+      }
+    });
 
     // Esperamos a que aparezca el botón de reintentar
     const botonReintentar = await screen.findByRole('button', { name: 'Reintentar' });
@@ -102,7 +114,11 @@ describe('Vista: MascotasView.vue', () => {
   // --- TEST 4: Filtrado ---
   it('debe filtrar las mascotas correctamente según la selección del usuario', async () => {
     api.get.mockResolvedValueOnce({ data: { content: mockMascotas } });
-    render(MascotasView);
+    render(MascotasView, {
+      global: {
+        stubs: ['router-link']
+      }
+    });
 
     // Esperamos a que carguen los datos
     await waitFor(() => {
@@ -131,7 +147,10 @@ describe('Vista: MascotasView.vue', () => {
       data: [{ id: 1, tipoReporte: 'PERDIDA' }]
     });
 
-    render(MascotasView);
+    render(MascotasView , {
+      global: {
+        stubs: ['router-link']
+      }});
 
     await waitFor(() => {
       expect(screen.getAllByTestId('mascota-card').length).toBe(1);

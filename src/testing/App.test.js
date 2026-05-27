@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/vue';
 import { reactive, nextTick } from 'vue';
-import App from './App.vue';
+import App from '../../src/App.vue';
 
 // 1. Objeto reactivo para la ruta y mock de navegación
 const mockRoute = reactive({ fullPath: '/' });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/vue';
-import MascotaCard from './mascotaCard.vue';
+import MascotaCard from '../components/mascotas/mascotaCard.vue';
 
 // Necesitamos simular (stub) el router-link porque el componente lo usa
 const globalMountOptions = {
