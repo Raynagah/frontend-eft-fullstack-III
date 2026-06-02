@@ -246,4 +246,22 @@ describe('PerfilView.vue', () => {
     // Confirmamos que el catch atrapó la excepción y llamó al console.error
     expect(console.error).toHaveBeenCalled();
   });
+
+  it('9. Maneja correctamente la ausencia de usuario en el localStorage (branch || {})', async () => {
+    // 1. Limpiamos el localStorage específicamente para esta prueba
+    // Esto sobrescribe el beforeEach y hace que getItem devuelva null
+    localStorage.clear();
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    // 2. Montamos el componente
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // 3. Verificamos que el componente se monta sin romperse a pesar de no tener usuario local
+    expect(wrapper.exists()).toBe(true);
+  });
 });

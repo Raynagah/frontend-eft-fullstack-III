@@ -272,5 +272,110 @@ describe('DetalleMascotaView.vue', () => {
     expect(wrapper3.vm.tituloAmigable).toBe('Buscamos a este perro');
   });
 
+  it('12. Muestra la descripción de la coincidencia si la propiedad descripcionMatch existe', async () => {
+    const mockMascota = {
+      id: '123',
+      nombre: 'Rex',
+      posiblesCoincidencias: [
+        { mascotaId: '456', nombreMascota: 'Max', porcentajeSimilitud: 85, descripcionMatch: 'Coincide en la mancha del ojo izquierdo' }
+      ]
+    };
+    
+    axios.get.mockResolvedValue({ data: mockMascota });
+    const wrapper = mountComponent();
+    
+    await flushPromises();
+    // Verificamos que el texto del v-if se renderice correctamente
+    expect(wrapper.text()).toContain('Coincide en la mancha del ojo izquierdo');
+  });
+
+  it('13. La propiedad computada estadoClase retorna un string vacío si mascota.value es null (estado de carga inicial)', () => {
+    // Simulamos una promesa que no se resuelve inmediatamente para mantener mascota.value en null
+    axios.get.mockReturnValue(new Promise(() => {}));
+    
+    const wrapper = mountComponent();
+    
+    // Al montarse, antes de resolverse la API, mascota.value es null
+    expect(wrapper.vm.estadoClase).toBe('');
+  });
+
+  it('14. Destruye la instancia previa del mapa antes de crear una nueva al cambiar de ruta', async () => {
+    // 1. Creamos el contenedor para que Leaflet pase la validación inicial
+    const cont = document.createElement('div');
+    cont.id = 'mapa-mascota';
+    document.body.appendChild(cont);
+
+    // 2. Resolvemos la primera vez para crear el mapa
+    axios.get.mockResolvedValue({
+      data: { id: '1', nombre: 'Fido', ubicacion: { latitud: -41.4, longitud: -72.9 } }
+    });
+
+    const wrapper = mount(DetalleMascotaView, { attachTo: cont, global: { mocks: { $router: { push: mockPush } } } });
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    // 3. Forzamos el cambio de ID en la ruta (watcher) para que vuelva a ejecutar initMap
+    axios.get.mockResolvedValue({
+      data: { id: '2', nombre: 'Fido Cambiado', ubicacion: { latitud: -41.4, longitud: -72.9 } }
+    });
+    mockRoute.params.id = '2';
+    
+    await nextTick();
+    await flushPromises();
+
+    // Comprobamos que el remove del mock global fue llamado
+    expect(mockMapInstance.remove).toHaveBeenCalled();
+
+    wrapper.unmount();
+    cont.remove();
+  });
+
+  it('15. Captura y muestra un error en consola si falla la inicialización de Leaflet', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    const cont = document.createElement('div');
+    cont.id = 'mapa-mascota';
+    document.body.appendChild(cont);
+
+    axios.get.mockResolvedValue({
+      data: { id: '1', ubicacion: { latitud: -41.4, longitud: -72.9 } }
+    });
+
+    // Modificamos el mock de Leaflet SOLO para esta prueba, forzando un error en L.marker
+    const importLeaflet = await import('leaflet');
+    importLeaflet.default.marker.mockImplementationOnce(() => {
+      throw new Error('Error simulado de Leaflet');
+    });
+
+    const wrapper = mount(DetalleMascotaView, { attachTo: cont, global: { mocks: { $router: { push: mockPush } } } });
+    
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+
+    // Verificamos que el sistema entró al catch y registró el error
+    expect(consoleSpy).toHaveBeenCalledWith("Error al inicializar el mapa:", expect.any(Error));
+
+    consoleSpy.mockRestore();
+    wrapper.unmount();
+    cont.remove();
+  });
   
+  it('16. Usa el index como key en el v-for si la coincidencia no tiene mascotaId', async () => {
+    const mockMascota = {
+      id: '123',
+      nombre: 'Rex',
+      posiblesCoincidencias: [
+        // Enviamos un match SIN mascotaId para forzar el uso de "|| index"
+        { nombreMascota: 'Match sin ID', porcentajeSimilitud: 90, descripcionMatch: 'Mismo color' }
+      ]
+    };
+    
+    axios.get.mockResolvedValue({ data: mockMascota });
+    const wrapper = mountComponent();
+    
+    await flushPromises();
+    
+    // Verificamos que se renderice correctamente en el DOM
+    expect(wrapper.text()).toContain('Match sin ID');
+  });
 });

@@ -68,7 +68,7 @@ describe('Componente MascotaCard.vue', () => {
     expect(imagen.getAttribute('src')).toBe('/img/perro-default.png');
   });
 
-  // --- TEST 4: Lógica de Estado (Clases CSS) ---
+  // --- TEST 4: Lógica de Estado (Clases CSS - REJECTED) ---
   it('Debe aplicar la clase badge-danger si el estado es REJECTED', () => {
     const mascotaMock = {
       nombre: 'Pelusa',
@@ -85,4 +85,58 @@ describe('Componente MascotaCard.vue', () => {
     // Comprobamos que el elemento HTML contenga esa clase CSS específica
     expect(badge.classList.contains('badge-danger')).toBe(true);
   });
+
+  // --- NUEVO TEST 5: Rescate de nombre faltante ---
+  it('Debe mostrar "Sin nombre" y el alt genérico si la mascota no tiene nombre definido', () => {
+    const mascotaMock = {
+      resumen: 'Mascota encontrada sin placa',
+      sagaStatus: 'COMPLETED'
+    };
+
+    render(MascotaCard, {
+      props: { mascota: mascotaMock },
+      global: globalMountOptions
+    });
+
+    // Verifica que use el fallback de texto 'Sin nombre'
+    expect(screen.getByText('Sin nombre')).toBeTruthy();
+
+    // Verifica que el atributo alt sea el genérico 'Foto de mascota'
+    const imagen = screen.getByRole('img');
+    expect(imagen.getAttribute('alt')).toBe('Foto de mascota');
+  });
+
+  // --- NUEVO TEST 6: Lógica de Imagen ---
+  it('Debe usar la imagen de gato por defecto si el texto de búsqueda contiene la palabra gato', () => {
+    const mascotaMock = {
+      nombre: 'Michi',
+      titulo: 'Se busca gato perdido color pardo', // Desencadena la lógica de 'gato'
+      especie: ''
+    };
+
+    render(MascotaCard, {
+      props: { mascota: mascotaMock },
+      global: globalMountOptions
+    });
+
+    const imagen = screen.getByRole('img');
+    expect(imagen.getAttribute('src')).toBe('/img/gato-default.png');
+  });
+
+  // --- NUEVO TEST 7: Lógica de Estado ---
+  it('Debe aplicar la clase badge-warning si el estado es PENDING', () => {
+    const mascotaMock = {
+      nombre: 'Simba',
+      sagaStatus: 'PENDING'
+    };
+
+    render(MascotaCard, {
+      props: { mascota: mascotaMock },
+      global: globalMountOptions
+    });
+
+    const badge = screen.getByText('PENDING');
+    expect(badge.classList.contains('badge-warning')).toBe(true);
+  });
+
 });

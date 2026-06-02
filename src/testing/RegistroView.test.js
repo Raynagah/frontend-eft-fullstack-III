@@ -67,4 +67,22 @@ describe('Vista: RegistroView.vue', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
   });
+
+  it('debe mostrar mensaje de error genérico si el backend no devuelve un mensaje específico', async () => {
+    // Simulamos un error genérico sin la propiedad response.data.message
+    api.post.mockRejectedValueOnce(new Error('Network Error'));
+
+    render(RegistroView);
+
+    // Forzamos el envío del formulario
+    const form = screen.getByRole('button', { name: /Crear mi cuenta/i }).closest('form');
+    await fireEvent.submit(form);
+
+    // Buscamos una porción del texto real que tienes en el fallback de tu vista
+    const mensajeError = await screen.findByText(/Error al registrar\. Revisa los datos/i);
+    expect(mensajeError).toBeTruthy();
+    
+    // Confirmamos que no navegó a otra ruta
+    expect(mockPush).not.toHaveBeenCalled();
+  });
 });
