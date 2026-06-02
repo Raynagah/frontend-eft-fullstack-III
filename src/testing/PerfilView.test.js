@@ -264,4 +264,23 @@ describe('PerfilView.vue', () => {
     // 3. Verificamos que el componente se monta sin romperse a pesar de no tener usuario local
     expect(wrapper.exists()).toBe(true);
   });
+
+  it('10. Muestra el badge con el rol del usuario si este existe (branch v-if="usuario.rol")', async () => {
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      
+      // Simulamos que la API devuelve los mismos datos, pero agregando un "rol"
+      return Promise.resolve({ 
+        data: { ...mockDatosApi, rol: 'Administrador' } 
+      });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Buscamos el elemento y verificamos que se renderice con el texto correcto
+    const badge = wrapper.find('.user-badge');
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toBe('Administrador');
+  });
 });

@@ -41,7 +41,7 @@ export default defineConfig({
         statements: 90,
         functions: 90,
         lines: 90,
-        branches: 90 // Límite específico para ramas
+        branches: 90
       }
     }
   }
