@@ -43,7 +43,9 @@ describe('PerfilView.vue', () => {
       global: {
         stubs: {
           // Sustituimos el componente hijo para evitar errores por dependencias
-          MascotaCard: true 
+          MascotaCard: true,
+          // Simulamos router-link correctamente
+          'router-link': true 
         }
       }
     });
@@ -282,5 +284,54 @@ describe('PerfilView.vue', () => {
     const badge = wrapper.find('.user-badge');
     expect(badge.exists()).toBe(true);
     expect(badge.text()).toBe('Administrador');
+  });
+
+  it('11. Permite navegar entre las pestañas de Mis Datos y Reportes', async () => {
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Verificamos que por defecto estamos en Mis Datos
+    expect(wrapper.text()).toContain('Información Personal');
+
+    // 1. Hacemos clic en la pestaña de reportes
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+    
+    // Verificamos que la interfaz cambió al estado vacío de reportes
+    expect(wrapper.text()).toContain('Aún no tienes reportes activos');
+    expect(wrapper.text()).not.toContain('Información Personal'); // La otra pestaña desapareció
+
+    // 2. Volvemos a hacer clic en la pestaña de datos
+    await wrapper.find('[data-testid="tab-datos"]').trigger('click');
+    
+    // Verificamos que volvió a la vista original
+    expect(wrapper.text()).toContain('Información Personal');
+  });
+
+  it('12. Redirecciona correctamente a la vista de detalle al hacer clic en un reporte del historial', async () => {
+    // Simulamos que el usuario SÍ tiene un reporte en su historial
+    const mockReportesUsuario = [
+      { id: 101, nombre: 'Firulais', especie: 'Perro', tipoReporte: 'PERDIDA', color: 'Marrón' }
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportesUsuario });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Vamos a la pestaña de reportes
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Buscamos el link que envuelve a la tarjeta
+    const linkDetalle = wrapper.find('[data-testid="link-detalle-reporte"]');
+    expect(linkDetalle.exists()).toBe(true);
+    expect(linkDetalle.attributes('to')).toBe('/mascotas/101');
   });
 });

@@ -1,9 +1,9 @@
 <template>
   <div class="app-container">
     <header class="navbar">
-      <div class="navbar-brand">
-        <img src="./assets/Logo Proyecto fullstack III.png" alt="Sanos y Salvos Logo" class="logo-img" />
-      </div>
+      <router-link to="/" class="navbar-logo-link">
+        <img src="../src/assets/Logo Proyecto fullstack III.png" alt="Logo Sanos y Salvos" class="navbar-logo" />
+      </router-link>
 
       <nav class="navbar-links">
         <router-link to="/" class="nav-link">Inicio</router-link>
@@ -210,6 +210,7 @@ const cerrarSesion = () => {
     margin-top: 0.5rem;
   }
 }
+
 /* Estilo específico para el link del perfil */
 .profile-link {
   display: flex;
@@ -221,7 +222,8 @@ const cerrarSesion = () => {
 }
 
 .profile-link:hover {
-  background-color: rgba(56, 138, 152, 0.1); /* Un toque del color primary muy suave */
+  background-color: rgba(56, 138, 152, 0.1);
+  /* Un toque del color primary muy suave */
   text-decoration: none;
 }
 
@@ -229,5 +231,21 @@ const cerrarSesion = () => {
   color: var(--color-primary);
   font-weight: 700;
   font-size: 1.1rem;
+}
+.navbar-logo {
+  height: 75px;      
+  width: auto;
+  display: block;
+}
+
+.navbar-logo-link {
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.navbar-logo-link:hover {
+  transform: scale(1.03);
+  /* Un sutil efecto de agrandamiento */
 }
 </style>

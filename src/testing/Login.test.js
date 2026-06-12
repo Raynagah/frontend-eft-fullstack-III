@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/vue'; // <-- Añadimos waitFor
-import Login from '../views/login.vue'; 
+import { render, screen, fireEvent, waitFor } from '@testing-library/vue'; 
+import Login from '../views/Login.vue'; 
 
 // 1. Mockeamos el Vue Router
 const mockPush = vi.fn();

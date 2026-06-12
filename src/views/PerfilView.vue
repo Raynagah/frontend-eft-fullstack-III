@@ -1,5 +1,17 @@
 <template>
-  <div v-if="tabActual === 'datos'" class="tab-content fade-in">
+  <div class="perfil-container">
+    <div class="tabs-menu">
+      <button :class="['tab-btn', { active: tabActual === 'datos' }]" @click="tabActual = 'datos'"
+        data-testid="tab-datos">
+        👤 Mis Datos
+      </button>
+      <button :class="['tab-btn', { active: tabActual === 'reportes' }]" @click="tabActual = 'reportes'"
+        data-testid="tab-reportes">
+        📋 Historial de Reportes
+      </button>
+    </div>
+
+    <div v-if="tabActual === 'datos'" class="tab-content fade-in">
       <div class="form-card">
         <div class="card-header">
           <div class="header-user-info">
@@ -11,14 +23,14 @@
               <span class="user-badge" v-if="usuario.rol">{{ usuario.rol }}</span>
             </div>
           </div>
-          
+
           <button v-if="!modoEdicion && !cargandoDatos" @click="iniciarEdicion" class="btn-editar">
             ✏️ Editar Perfil
           </button>
         </div>
-        
+
         <div v-if="cargandoDatos" class="loader">Cargando...</div>
-        
+
         <div v-else-if="!modoEdicion" class="perfil-view">
           <div v-if="errorDatos" class="alert error mb-3">{{ errorDatos }}</div>
           <div class="info-grid">
@@ -56,7 +68,7 @@
 
         <form v-else @submit.prevent="guardarDatos" class="perfil-form fade-in">
           <p class="form-subtitle">Modifica los campos que necesites actualizar.</p>
-          
+
           <div class="form-row">
             <div class="form-group flex-2">
               <label for="nombre-perfil">Nombre Completo*</label>
@@ -64,7 +76,8 @@
             </div>
             <div class="form-group flex-1">
               <label for="edad-perfil">Edad*</label>
-              <input id="edad-perfil" data-testid="input-edad-perfil" type="number" v-model="usuario.edad" min="18" max="100" required>
+              <input id="edad-perfil" data-testid="input-edad-perfil" type="number" v-model="usuario.edad" min="18"
+                max="100" required>
             </div>
           </div>
 
@@ -81,18 +94,21 @@
             </div>
             <div class="form-group flex-1">
               <label for="telefono-perfil">Teléfono*</label>
-              <input id="telefono-perfil" data-testid="input-telefono-perfil" type="tel" v-model="usuario.telefono" required>
+              <input id="telefono-perfil" data-testid="input-telefono-perfil" type="tel" v-model="usuario.telefono"
+                required>
             </div>
           </div>
 
           <div class="form-group">
             <label for="ocupacion-perfil">Ocupación</label>
-            <input id="ocupacion-perfil" data-testid="input-ocupacion-perfil" type="text" v-model="usuario.ocupacion" placeholder="Ej: Veterinario, Estudiante...">
+            <input id="ocupacion-perfil" data-testid="input-ocupacion-perfil" type="text" v-model="usuario.ocupacion"
+              placeholder="Ej: Veterinario, Estudiante...">
           </div>
 
           <div class="form-group">
             <label for="direccion-perfil">Dirección</label>
-            <input id="direccion-perfil" data-testid="input-direccion-perfil" type="text" v-model="usuario.direccion" placeholder="Calle, Número, Ciudad">
+            <input id="direccion-perfil" data-testid="input-direccion-perfil" type="text" v-model="usuario.direccion"
+              placeholder="Calle, Número, Ciudad">
           </div>
 
           <div v-if="errorDatos" class="alert error">{{ errorDatos }}</div>
@@ -110,13 +126,20 @@
     </div>
 
     <div v-if="tabActual === 'reportes'" class="tab-content fade-in">
-       <div v-if="misReportes.length === 0" class="empty-state">
-         <h3>No tienes reportes activos</h3>
-       </div>
-       <div v-else class="mascotas-grid">
-          <MascotaCard v-for="m in misReportes" :key="m.id" :mascota="m" />
-       </div>
+      <div v-if="misReportes.length === 0" class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>Aún no tienes reportes activos</h3>
+        <p>Cuando reportes una mascota perdida o encontrada, aparecerá aquí para que puedas hacerle seguimiento.</p>
+      </div>
+
+      <div v-else class="mascotas-grid">
+        <router-link v-for="m in misReportes" :key="m.id" :to="`/mascotas/${m.id}`" class="card-link-wrapper"
+          data-testid="link-detalle-reporte">
+          <MascotaCard :mascota="m" />
+        </router-link>
+      </div>
     </div>
+  </div>
 </template>
 
 <script setup>
@@ -170,7 +193,7 @@ const cargarDatosPersonales = async () => {
     const response = await api.get(`/web/usuarios/${usuarioId.value}`);
     usuario.value = { ...usuario.value, ...response.data };
     // Guardamos una copia exacta para poder restaurar si cancelan
-    usuarioOriginal.value = JSON.parse(JSON.stringify(usuario.value)); 
+    usuarioOriginal.value = JSON.parse(JSON.stringify(usuario.value));
   } catch (error) {
     errorDatos.value = "Error al cargar datos.";
   } finally {
@@ -207,15 +230,15 @@ const guardarDatos = async () => {
     };
 
     const response = await api.put(`/web/usuarios/${usuarioId.value}`, payload);
-    
+
     // Actualizamos tanto el usuario actual como la copia de respaldo
     usuario.value = { ...usuario.value, ...response.data };
     usuarioOriginal.value = JSON.parse(JSON.stringify(usuario.value));
-    
+
     // Salimos del modo edición al guardar con éxito
     modoEdicion.value = false;
     mensajeExito.value = "¡Perfil actualizado con éxito!";
-    
+
     setTimeout(() => { mensajeExito.value = ''; }, 3000);
   } catch (error) {
     console.error(error);
@@ -228,8 +251,14 @@ const guardarDatos = async () => {
 const cargarMisReportes = async () => {
   try {
     const response = await api.get(`/web/usuarios/${usuarioId.value}/reportes`);
-    misReportes.value = response.data;
-  } catch (e) { console.error(e); }
+    
+    // Si viene dentro de 'content' (paginado), lo extraemos. Si no, tomamos el array directo.
+    misReportes.value = response.data.content || response.data;
+    
+    console.log("Reportes procesados con éxito:", misReportes.value);
+  } catch (e) { 
+    console.error("Error al cargar el historial:", e); 
+  }
 };
 </script>
 
@@ -369,13 +398,20 @@ const cargarMisReportes = async () => {
 .mt-2 {
   margin-top: 1rem;
 }
+
 .form-row {
   display: flex;
   gap: 1rem;
   margin-bottom: 0.5rem;
 }
-.flex-1 { flex: 1; }
-.flex-2 { flex: 2; }
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-2 {
+  flex: 2;
+}
 
 .perfil-form select {
   width: 100%;
@@ -384,183 +420,220 @@ const cargarMisReportes = async () => {
   border-radius: 8px;
   background-color: white;
 }
+
 .perfil-container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
 .header-section {
-    text-align: center;
-    margin-bottom: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
 .header-section h2 {
-    color: var(--color-primary, #2c3e50);
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
+  color: var(--color-primary, #2c3e50);
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
 }
 
 .header-section p {
-    color: #6c757d;
+  color: #6c757d;
 }
 
 /* --- TABS --- */
 .tabs-nav {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 1rem;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 0.8rem 1.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #6c757d;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.tab-btn:hover {
-    background-color: #f8f9fa;
-}
-
-.tab-btn.active {
-    color: white;
-    background-color: var(--color-primary, #007bff);
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 1rem;
 }
 
 .fade-in {
-    animation: fadeIn 0.4s ease-in-out;
+  animation: fadeIn 0.4s ease-in-out;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- FORMULARIO --- */
 .form-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    max-width: 600px;
-    margin: 0 auto;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .form-card h3 {
-    margin-top: 0;
-    color: #2c3e50;
+  margin-top: 0;
+  color: #2c3e50;
 }
 
 .form-subtitle {
-    color: #6c757d;
-    margin-bottom: 1.5rem;
-    font-size: 0.95rem;
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #343a40;
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #343a40;
 }
 
 .form-group input {
-    width: 100%;
-    padding: 0.8rem;
-    border: 1px solid #ced4da;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
 }
 
 .form-group input:focus {
-    outline: none;
-    border-color: var(--color-primary, #007bff);
+  outline: none;
+  border-color: var(--color-primary, #007bff);
 }
 
 .readonly-input {
-    background-color: #e9ecef;
-    color: #6c757d;
-    cursor: not-allowed;
+  background-color: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
 }
 
 .btn-guardar:hover:not(:disabled) {
-    opacity: 0.9;
+  opacity: 0.9;
 }
 
 .btn-guardar:disabled {
-    background-color: #6c757d;
-    cursor: wait;
+  background-color: #6c757d;
+  cursor: wait;
 }
 
 /* --- ESTADOS Y MENSAJES --- */
 .alert {
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    font-weight: 500;
-    text-align: center;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  text-align: center;
 }
 
 .alert.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
 }
 
 .alert.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
 .loader {
-    text-align: center;
-    padding: 2rem;
-    color: #6c757d;
-    font-weight: 500;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.empty-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-weight: 500;
 }
 
 /* --- GRILLA DE REPORTES --- */
 .mascotas-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.perfil-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.tabs-menu {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #E2E8F0;
+  padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  color: var(--color-primary);
+  background-color: #F8FAFC;
+}
+
+.tab-btn.active {
+  color: var(--color-primary);
+  border-bottom: 3px solid var(--color-primary);
+  margin-bottom: -11px;
+  /* Para alinear con el borde inferior del contenedor */
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #64748B;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.card-link-wrapper {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-link-wrapper:hover {
+  transform: translateY(-4px);
 }
 </style>
