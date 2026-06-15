@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 // Rutas
 const routes = [
+  
   {
     path: '/',
     name: 'home',
@@ -41,11 +42,18 @@ const routes = [
     meta: { requiresAuth: true } 
   },
   {
+    path: '/notificaciones',
+    name: 'notificaciones',
+    component: () => import('../views/BandejaNotificacionesView.vue'),
+    meta: { requiresAuth: true } // Requiere estar logueado para ver sus notificaciones
+  },
+  {
     path: '/admin',
     name: 'admin',
     component: () => import('../views/admin/UsuariosAdminView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   }
+  
 ]
 
 const router = createRouter({

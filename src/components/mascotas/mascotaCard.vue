@@ -7,8 +7,12 @@
         class="mascota-foto"
       />
       
-      <span class="badge" :class="estadoClase">
-        {{ mascota.sagaStatus || mascota.estado || mascota.tipoReporte }}
+      <span v-if="mascota.tipoReporte" class="badge badge-tipo" :class="tipoReporteClase">
+        {{ tipoReporteTexto }}
+      </span>
+
+      <span v-if="mascota.sagaStatus || mascota.estado" class="badge badge-estado" :class="estadoClase">
+        {{ mascota.sagaStatus || mascota.estado }}
       </span>
     </div>
 
@@ -36,22 +40,33 @@ const props = defineProps({
   }
 });
 
+// NUEVO: Formateo de texto del tipo de reporte con emojis descriptivos
+const tipoReporteTexto = computed(() => {
+  const tipo = (props.mascota.tipoReporte || '').toUpperCase();
+  if (tipo === 'PERDIDA') return '🔍 Perdida';
+  if (tipo === 'ENCONTRADA') return '🤝 Encontrada';
+  return props.mascota.tipoReporte;
+});
+
+// NUEVO: Clases dinámicas de color para el tipo de reporte
+const tipoReporteClase = computed(() => {
+  const tipo = (props.mascota.tipoReporte || '').toUpperCase();
+  if (tipo === 'PERDIDA') return 'reporte-perdida';
+  if (tipo === 'ENCONTRADA') return 'reporte-encontrada';
+  return 'reporte-default';
+});
+
 // Computada con la lógica de rescate (búsqueda en título)
 const imagenMascota = computed(() => {
-  // 1. Prioridad: URL de fotografía si existe
   const url = props.mascota.fotografiaUrl || props.mascota.fotoUrl;
   if (url && String(url) !== 'null' && String(url).trim() !== '') {
     return url;
   }
   
-  // 2. Intentar obtener especie directamente (por si acaso)
   let especie = (props.mascota.especie || '').toLowerCase().trim();
 
-  // 3. ESTRATEGIA DE RESCATE: Si especie viene vacío, buscamos en el título
   if (!especie) {
-    // Buscamos "perro" o "gato" en el título
     const contenidoBusqueda = (props.mascota.titulo || '').toLowerCase();
-
     if (contenidoBusqueda.includes('gato')) {
       especie = 'gato';
     } else if (contenidoBusqueda.includes('perro')) {
@@ -59,25 +74,22 @@ const imagenMascota = computed(() => {
     }
   }
 
-  // 4. Retornar imagen según la especie encontrada o deducida
   if (especie === 'gato') return '/img/gato-default.png';
   if (especie === 'perro') return '/img/perro-default.png';
   
-  // 5. Fallback final si nada funcionó
   return '/img/mascota-default.png'; 
 });
 
 const estadoClase = computed(() => {
   const estado = (props.mascota.sagaStatus || props.mascota.estado || '').toUpperCase();
-  if (estado === 'COMPLETED') return 'badge-success';
-  if (estado === 'PENDING') return 'badge-warning';
-  if (estado === 'REJECTED' || estado === 'FAILED') return 'badge-danger';
+  if (estado === 'COMPLETED' || estado === 'COMPLETADO') return 'badge-success';
+  if (estado === 'PENDING' || estado === 'PENDIENTE') return 'badge-warning';
+  if (estado === 'REJECTED' || estado === 'FAILED' || estado === 'RECHAZADO') return 'badge-danger';
   return 'badge-default';
 });
 </script>
 
 <style scoped>
-/* Estilos generales de la tarjeta (Intactos) */
 .card {
   background-color: var(--color-white);
   border-radius: 12px;
@@ -93,49 +105,52 @@ const estadoClase = computed(() => {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-/* --- MODIFICACIÓN AQUÍ --- */
 .card-image {
   position: relative;
   height: 200px;
   width: 100%;
-  background-color: #f8f9fa; /* Fondo gris suave para cuando la imagen no llena todo */
-  
-  /* Centrado perfecto del ícono */
+  background-color: #f8f9fa;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Asegura que NADA se salga */
-  padding: 1rem; /* Espaciado para que el ícono no toque los bordes */
+  overflow: hidden;
+  padding: 1rem;
 }
 
 .card-image img {
-  /* Evitamos que se estire innecesariamente */
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
-  
-  /* Contain: Se ajusta al tamaño máximo sin cortarse ni deformarse */
   object-fit: contain; 
 }
-/* --- FIN MODIFICACIÓN --- */
 
-/* Resto de estilos (Intactos) */
+/* --- CLASE BASE PARA BADGES --- */
 .badge {
   position: absolute;
   top: 10px;
-  right: 10px;
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: white;
   letter-spacing: 0.5px;
-  z-index: 2; /* Asegurar que esté sobre la foto */
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
+/* Posiciones de los Badges */
+.badge-tipo { left: 10px; }
+.badge-estado { right: 10px; }
+
+/* NUEVOS COLORES PARA EL TIPO DE REPORTE */
+.reporte-perdida { background-color: #e53e3e; }     /* Rojo carmesí llamativo */
+.reporte-encontrada { background-color: #0d9488; }  /* Verde esmeralda/Teal */
+.reporte-default { background-color: #4a5568; }
+
+/* COLORES PARA ESTADO DE LA SAGA */
 .badge-success { background-color: #28a745; }
-.badge-warning { background-color: var(--color-accent, #ffc107); }
+.badge-warning { background-color: #ffc107; color: #212529; } /* Texto oscuro para mejor contraste */
 .badge-danger { background-color: #dc3545; }
 .badge-default { background-color: var(--color-primary, #007bff); }
 

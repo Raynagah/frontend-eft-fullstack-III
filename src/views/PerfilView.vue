@@ -126,17 +126,41 @@
     </div>
 
     <div v-if="tabActual === 'reportes'" class="tab-content fade-in">
+      
+      <div v-if="misReportes.length > 0" class="filtros-container">
+        <button :class="['filtro-chip', { active: filtroActual === 'TODOS' }]" @click="filtroActual = 'TODOS'">
+          📋 Todas
+        </button>
+        <button :class="['filtro-chip', { active: filtroActual === 'PERDIDA' }]" @click="filtroActual = 'PERDIDA'">
+          🔍 Perdidas
+        </button>
+        <button :class="['filtro-chip', { active: filtroActual === 'ENCONTRADA' }]" @click="filtroActual = 'ENCONTRADA'">
+          🤝 Encontradas
+        </button>
+      </div>
+
       <div v-if="misReportes.length === 0" class="empty-state">
         <div class="empty-icon">📭</div>
         <h3>Aún no tienes reportes activos</h3>
         <p>Cuando reportes una mascota perdida o encontrada, aparecerá aquí para que puedas hacerle seguimiento.</p>
       </div>
 
+      <div v-else-if="reportesFiltrados.length === 0" class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3>No hay reportes en esta categoría</h3>
+        <p>No tienes ningún historial clasificado como "{{ filtroActual.toLowerCase() }}".</p>
+      </div>
+
       <div v-else class="mascotas-grid">
-        <router-link v-for="m in misReportes" :key="m.id" :to="`/mascotas/${m.id}`" class="card-link-wrapper"
-          data-testid="link-detalle-reporte">
-          <MascotaCard :mascota="m" />
-        </router-link>
+        <div v-for="m in reportesFiltrados" :key="m.id" class="reporte-item-container">
+          <router-link :to="`/mascotas/${m.id}`" class="card-link-wrapper" data-testid="link-detalle-reporte">
+            <MascotaCard :mascota="m" />
+          </router-link>
+          
+          <button @click.stop.prevent="confirmarEliminar(m.id)" class="btn-eliminar-reporte">
+            🗑️ Eliminar Reporte
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -148,11 +172,13 @@ import api from '../api/axiosConfig.js';
 import MascotaCard from '../components/mascotas/MascotaCard.vue';
 
 const modoEdicion = ref(false);
-const usuarioOriginal = ref({}); // Guardará un respaldo de los datos
+const usuarioOriginal = ref({});
 const tabActual = ref('datos');
 const usuarioId = ref(null);
 
-// Lógica para obtener la inicial del nombre para el Avatar
+// NUEVO: Estado que maneja la selección del filtro activo
+const filtroActual = ref('TODOS');
+
 const inicialNombre = computed(() => {
   if (usuario.value && usuario.value.nombre) {
     return usuario.value.nombre.charAt(0).toUpperCase();
@@ -160,7 +186,6 @@ const inicialNombre = computed(() => {
   return '👤';
 });
 
-// Estado del formulario ampliado
 const usuario = ref({
   nombre: '',
   edad: null,
@@ -168,7 +193,7 @@ const usuario = ref({
   telefono: '',
   ocupacion: '',
   direccion: '',
-  correo: '', // Solo para mostrar
+  correo: '',
   fotoUrl: ''
 });
 
@@ -177,6 +202,14 @@ const guardando = ref(false);
 const mensajeExito = ref('');
 const errorDatos = ref('');
 const misReportes = ref([]);
+
+// NUEVO: Propiedad computada que se encarga de filtrar la lista en memoria automáticamente
+const reportesFiltrados = computed(() => {
+  if (filtroActual.value === 'TODOS') {
+    return misReportes.value;
+  }
+  return misReportes.value.filter(m => m.tipoReporte?.toUpperCase() === filtroActual.value);
+});
 
 onMounted(async () => {
   const userStorage = localStorage.getItem('usuario');
@@ -192,7 +225,6 @@ const cargarDatosPersonales = async () => {
   try {
     const response = await api.get(`/web/usuarios/${usuarioId.value}`);
     usuario.value = { ...usuario.value, ...response.data };
-    // Guardamos una copia exacta para poder restaurar si cancelan
     usuarioOriginal.value = JSON.parse(JSON.stringify(usuario.value));
   } catch (error) {
     errorDatos.value = "Error al cargar datos.";
@@ -207,7 +239,6 @@ const iniciarEdicion = () => {
 };
 
 const cancelarEdicion = () => {
-  // Restauramos los datos desde la copia original
   usuario.value = JSON.parse(JSON.stringify(usuarioOriginal.value));
   modoEdicion.value = false;
   errorDatos.value = '';
@@ -230,15 +261,10 @@ const guardarDatos = async () => {
     };
 
     const response = await api.put(`/web/usuarios/${usuarioId.value}`, payload);
-
-    // Actualizamos tanto el usuario actual como la copia de respaldo
     usuario.value = { ...usuario.value, ...response.data };
     usuarioOriginal.value = JSON.parse(JSON.stringify(usuario.value));
-
-    // Salimos del modo edición al guardar con éxito
     modoEdicion.value = false;
     mensajeExito.value = "¡Perfil actualizado con éxito!";
-
     setTimeout(() => { mensajeExito.value = ''; }, 3000);
   } catch (error) {
     console.error(error);
@@ -251,13 +277,24 @@ const guardarDatos = async () => {
 const cargarMisReportes = async () => {
   try {
     const response = await api.get(`/web/usuarios/${usuarioId.value}/reportes`);
-    
-    // Si viene dentro de 'content' (paginado), lo extraemos. Si no, tomamos el array directo.
     misReportes.value = response.data.content || response.data;
-    
     console.log("Reportes procesados con éxito:", misReportes.value);
   } catch (e) { 
     console.error("Error al cargar el historial:", e); 
+  }
+};
+
+const confirmarEliminar = async (id) => {
+  const confirmacion = confirm("¿Estás completamente seguro de eliminar este reporte? Se borrará de forma permanente del mapa y el sistema.");
+  if (confirmacion) {
+    try {
+      await api.delete(`/web/mascotas/${id}`);
+      await cargarMisReportes();
+      alert("Reporte eliminado exitosamente.");
+    } catch (err) {
+      console.error("Error al eliminar reporte:", err);
+      alert("Hubo un problema al intentar eliminar este reporte.");
+    }
   }
 };
 </script>
@@ -308,9 +345,7 @@ const cargarMisReportes = async () => {
   text-transform: uppercase;
 }
 
-.card-header h3 {
-  margin: 0;
-}
+.card-header h3 { margin: 0; }
 
 .btn-editar {
   background-color: transparent;
@@ -335,34 +370,13 @@ const cargarMisReportes = async () => {
   gap: 1.5rem;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.info-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.info-item .label {
-  font-size: 0.85rem;
-  color: #6c757d;
-  font-weight: 600;
-  margin-bottom: 0.2rem;
-}
-
-.info-item .value {
-  font-size: 1.05rem;
-  color: #2c3e50;
-  font-weight: 500;
-}
+.info-item { display: flex; flex-direction: column; }
+.info-item.full-width { grid-column: 1 / -1; }
+.info-item .label { font-size: 0.85rem; color: #6c757d; font-weight: 600; margin-bottom: 0.2rem; }
+.info-item .value { font-size: 1.05rem; color: #2c3e50; font-weight: 500; }
 
 /* Botones del formulario */
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
+.form-actions { display: flex; gap: 1rem; margin-top: 2rem; }
 
 .btn-cancelar {
   flex: 1;
@@ -377,9 +391,7 @@ const cargarMisReportes = async () => {
   transition: background-color 0.3s;
 }
 
-.btn-cancelar:hover {
-  background-color: #e2e6ea;
-}
+.btn-cancelar:hover { background-color: #e2e6ea; }
 
 .btn-guardar {
   flex: 2;
@@ -395,23 +407,10 @@ const cargarMisReportes = async () => {
   transition: opacity 0.3s;
 }
 
-.mt-2 {
-  margin-top: 1rem;
-}
-
-.form-row {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-.flex-2 {
-  flex: 2;
-}
+.mt-2 { margin-top: 1rem; }
+.form-row { display: flex; gap: 1rem; margin-bottom: 0.5rem; }
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
 
 .perfil-form select {
   width: 100%;
@@ -427,45 +426,10 @@ const cargarMisReportes = async () => {
   padding: 2rem 1rem;
 }
 
-.header-section {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.header-section h2 {
-  color: var(--color-primary, #2c3e50);
-  font-size: 2.2rem;
-  margin-bottom: 0.5rem;
-}
-
-.header-section p {
-  color: #6c757d;
-}
-
-/* --- TABS --- */
-.tabs-nav {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 1rem;
-}
-
-.fade-in {
-  animation: fadeIn 0.4s ease-in-out;
-}
-
+.fade-in { animation: fadeIn 0.4s ease-in-out; }
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* --- FORMULARIO --- */
@@ -478,27 +442,10 @@ const cargarMisReportes = async () => {
   margin: 0 auto;
 }
 
-.form-card h3 {
-  margin-top: 0;
-  color: #2c3e50;
-}
-
-.form-subtitle {
-  color: #6c757d;
-  margin-bottom: 1.5rem;
-  font-size: 0.95rem;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #343a40;
-}
+.form-card h3 { margin-top: 0; color: #2c3e50; }
+.form-subtitle { color: #6c757d; margin-bottom: 1.5rem; font-size: 0.95rem; }
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #343a40; }
 
 .form-group input {
   width: 100%;
@@ -509,52 +456,49 @@ const cargarMisReportes = async () => {
   transition: border-color 0.3s;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: var(--color-primary, #007bff);
-}
-
-.readonly-input {
-  background-color: #e9ecef;
-  color: #6c757d;
-  cursor: not-allowed;
-}
-
-.btn-guardar:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-guardar:disabled {
-  background-color: #6c757d;
-  cursor: wait;
-}
+.form-group input:focus { outline: none; border-color: var(--color-primary, #007bff); }
+.btn-guardar:hover:not(:disabled) { opacity: 0.9; }
+.btn-guardar:disabled { background-color: #6c757d; cursor: wait; }
 
 /* --- ESTADOS Y MENSAJES --- */
-.alert {
-  padding: 1rem;
-  border-radius: 8px;
+.alert { padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 500; text-align: center; }
+.alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.loader { text-align: center; padding: 2rem; color: #6c757d; font-weight: 500; }
+
+/* --- NUEVOS ESTILOS PARA LA SECCIÓN DE FILTROS --- */
+.filtros-container {
+  display: flex;
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
-  font-weight: 500;
-  text-align: center;
+  background-color: #f8fafc;
+  padding: 0.5rem;
+  border-radius: 30px;
+  width: fit-content;
+  border: 1px solid #e2e8f0;
 }
 
-.alert.success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+.filtro-chip {
+  background: none;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: all 0.2s ease;
 }
 
-.alert.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+.filtro-chip:hover {
+  color: var(--color-primary, #388A98);
+  background-color: #f1f5f9;
 }
 
-.loader {
-  text-align: center;
-  padding: 2rem;
-  color: #6c757d;
-  font-weight: 500;
+.filtro-chip.active {
+  background-color: var(--color-primary, #388A98);
+  color: white;
+  box-shadow: 0 2px 8px rgba(56, 138, 152, 0.25);
 }
 
 /* --- GRILLA DE REPORTES --- */
@@ -564,11 +508,37 @@ const cargarMisReportes = async () => {
   gap: 2rem;
 }
 
-.perfil-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+.reporte-item-container {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+.reporte-item-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-link-wrapper { text-decoration: none; color: inherit; display: block; }
+
+.btn-eliminar-reporte {
+  background-color: #fff5f5;
+  color: #dc3545;
+  border: none;
+  border-top: 1px solid #fbd5d5;
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  width: 100%;
+}
+
+.btn-eliminar-reporte:hover { background-color: #dc3545; color: white; }
 
 .tabs-menu {
   display: flex;
@@ -590,17 +560,8 @@ const cargarMisReportes = async () => {
   transition: all 0.3s ease;
 }
 
-.tab-btn:hover {
-  color: var(--color-primary);
-  background-color: #F8FAFC;
-}
-
-.tab-btn.active {
-  color: var(--color-primary);
-  border-bottom: 3px solid var(--color-primary);
-  margin-bottom: -11px;
-  /* Para alinear con el borde inferior del contenedor */
-}
+.tab-btn:hover { color: var(--color-primary); background-color: #F8FAFC; }
+.tab-btn.active { color: var(--color-primary); border-bottom: 3px solid var(--color-primary); margin-bottom: -11px; }
 
 .empty-state {
   text-align: center;
@@ -608,32 +569,10 @@ const cargarMisReportes = async () => {
   background-color: var(--color-white);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-}
-
-.empty-state h3 {
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-  color: #64748B;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.card-link-wrapper {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-link-wrapper:hover {
-  transform: translateY(-4px);
-}
+.empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+.empty-state h3 { color: var(--color-text); margin-bottom: 0.5rem; }
+.empty-state p { color: #64748B; max-width: 400px; margin: 0 auto; }
 </style>
