@@ -15,7 +15,7 @@
       <div class="ficha-header">
         <div class="imagen-contenedor">
           <img :src="mascota.fotografiaUrl || 'https://via.placeholder.com/600x400?text=Sin+Foto'"
-            :alt="'Foto de ' + mascota.nombre" class="mascota-img" />
+            :alt="'Foto de ' + (mascota.nombre || 'Mascota')" class="mascota-img" />
           <span class="badge" :class="estadoClase">{{ mascota.sagaStatus || mascota.estado }}</span>
         </div>
         <div class="titulo-contenedor">
@@ -26,7 +26,11 @@
           </div>
           
           <h2>{{ tituloAmigable }}</h2>
-          <p class="fecha">Reportado en el sistema</p>
+
+          <div class="contenedor-fecha-detalle">
+            <span class="fecha-calendario">📅 {{ fechaFormateada }}</span>
+            <span class="fecha-relativa">🕒 {{ tiempoRelativo }}</span>
+          </div>
         </div>
       </div>
 
@@ -136,13 +140,55 @@ let mapaInstancia = null;
 const obtenerLatitud = computed(() => mascota.value?.ubicacion?.latitud || mascota.value?.latitud);
 const obtenerLongitud = computed(() => mascota.value?.ubicacion?.longitud || mascota.value?.longitud);
 
+// NUEVO: Formateador humano para la fecha exacta (Ej: 29 de marzo de 2026, 00:43)
+const fechaFormateated = computed(() => {
+  if (!mascota.value?.fechaReporte) return '';
+  const fecha = new Date(mascota.value.fechaReporte);
+  
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(fecha);
+});
+// Redireccionando para compatibilidad en template
+const fechaFormateada = fechaFormateated;
+
+// NUEVO: Cálculo computado del tiempo transcurrido desde el reporte
+const tiempoRelativo = computed(() => {
+  if (!mascota.value?.fechaReporte) return '';
+
+  const fechaReporte = new Date(mascota.value.fechaReporte);
+  const fechaActual = new Date();
+
+  const utc1 = Date.UTC(fechaReporte.getFullYear(), fechaReporte.getMonth(), fechaReporte.getDate());
+  const utc2 = Date.UTC(fechaActual.getFullYear(), fechaActual.getMonth(), fechaActual.getDate());
+
+  const milisegundosPorDia = 1000 * 60 * 60 * 24;
+  const diferenciaDias = Math.floor((utc2 - utc1) / milisegundosPorDia);
+
+  if (diferenciaDias < 0) return 'Reciente';
+  if (diferenciaDias === 0) return 'Hoy';
+  if (diferenciaDias === 1) return 'Ayer';
+  if (diferenciaDias < 7) return `Hace ${diferenciaDias} días`;
+  if (diferenciaDias < 30) {
+    const semanas = Math.floor(diferenciaDias / 7);
+    return semanas === 1 ? 'Hace 1 semana' : `Hace ${semanas} semanas`;
+  }
+  
+  const meses = Math.floor(diferenciaDias / 30);
+  return meses === 1 ? 'Hace 1 mes' : `Hace ${meses} meses`;
+});
+
 const estadoClase = computed(() => {
   if (!mascota.value) return '';
   const estado = (mascota.value.sagaStatus || mascota.value.estado || '').toUpperCase();
 
-  if (estado === 'COMPLETED') return 'badge-success';
-  if (estado === 'PENDING') return 'badge-warning';
-  if (estado === 'REJECTED' || estado === 'FAILED') return 'badge-danger';
+  if (estado === 'COMPLETED' || estado === 'COMPLETADO') return 'badge-success';
+  if (estado === 'PENDING' || estado === 'PENDIENTE') return 'badge-warning';
+  if (estado === 'REJECTED' || estado === 'FAILED' || estado === 'FAILED_SYNC') return 'badge-danger';
   return 'badge-default';
 });
 
@@ -239,7 +285,6 @@ const obtenerClaseSimilitud = (porcentaje) => {
   return 'fill-baja';
 };
 
-// NUEVA FUNCIÓN UTILITARIA PARA MINI BADGES
 const obtenerClaseTipoMatch = (tipo) => {
   if (!tipo) return '';
   return tipo.toUpperCase() === 'ENCONTRADA' ? 'tipo-encontrada-mini' : 'tipo-perdida-mini';
@@ -366,12 +411,33 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.fecha {
-  color: #6c757d;
-  font-size: 0.95rem;
+/* NUEVOS ESTILOS: Fila estética para la fecha y tiempo relativo */
+.contenedor-fecha-detalle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+  flex-wrap: wrap;
 }
 
-/* --- ESTILOS CORREGIDOS GLOBALES PARA EL BADGE TIPO REPORTE PRINCIPAL --- */
+.fecha-calendario, .fecha-relativa {
+  font-size: 0.95rem;
+  color: #4a5568;
+  background-color: #edf2f7;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.fecha-relativa {
+  background-color: #e2e8f0;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+/* --- ESTILOS BADGES TIPO REPORTE PRINCIPAL --- */
 .contenedor-badge-tipo {
   margin-bottom: 0.8rem;
 }
@@ -475,7 +541,6 @@ onMounted(() => {
   color: #6c757d;
 }
 
-/* NUEVA CABECERA DE LA COINCIDENCIA */
 .header-match {
   display: flex;
   align-items: center;
@@ -490,7 +555,6 @@ onMounted(() => {
   font-size: 1.1rem;
 }
 
-/* ESTILOS PARA LOS MINI BADGES */
 .badge-tipo-mini {
   font-size: 0.7rem;
   padding: 0.25rem 0.6rem;

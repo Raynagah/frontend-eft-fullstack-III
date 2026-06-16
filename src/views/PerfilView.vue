@@ -29,7 +29,7 @@
           </button>
         </div>
 
-        <div v-if="cargandoDatos" class="loader">Cargando...</div>
+        <div class="loader" v-if="cargandoDatos">Cargando...</div>
 
         <div v-else-if="!modoEdicion" class="perfil-view">
           <div v-if="errorDatos" class="alert error mb-3">{{ errorDatos }}</div>
@@ -127,16 +127,26 @@
 
     <div v-if="tabActual === 'reportes'" class="tab-content fade-in">
       
-      <div v-if="misReportes.length > 0" class="filtros-container">
-        <button :class="['filtro-chip', { active: filtroActual === 'TODOS' }]" @click="filtroActual = 'TODOS'">
-          📋 Todas
-        </button>
-        <button :class="['filtro-chip', { active: filtroActual === 'PERDIDA' }]" @click="filtroActual = 'PERDIDA'">
-          🔍 Perdidas
-        </button>
-        <button :class="['filtro-chip', { active: filtroActual === 'ENCONTRADA' }]" @click="filtroActual = 'ENCONTRADA'">
-          🤝 Encontradas
-        </button>
+      <div v-if="misReportes.length > 0" class="filtros-y-orden-wrapper">
+        <div class="filtros-container">
+          <button :class="['filtro-chip', { active: filtroActual === 'TODOS' }]" @click="filtroActual = 'TODOS'">
+            📋 Todas
+          </button>
+          <button :class="['filtro-chip', { active: filtroActual === 'PERDIDA' }]" @click="filtroActual = 'PERDIDA'">
+            🔍 Perdidas
+          </button>
+          <button :class="['filtro-chip', { active: filtroActual === 'ENCONTRADA' }]" @click="filtroActual = 'ENCONTRADA'">
+            🤝 Encontradas
+          </button>
+        </div>
+
+        <div class="orden-container">
+          <label for="orden-fecha">Ordenar por:</label>
+          <select id="orden-fecha" v-model="ordenActual" class="select-orden">
+            <option value="RECIENTES">Más recientes primero</option>
+            <option value="ANTIGUOS">Más antiguos primero</option>
+          </select>
+        </div>
       </div>
 
       <div v-if="misReportes.length === 0" class="empty-state">
@@ -153,7 +163,7 @@
 
       <div v-else class="mascotas-grid">
         <div v-for="m in reportesFiltrados" :key="m.id" class="reporte-item-container">
-          <router-link :to="`/mascotas/${m.id}`" class="card-link-wrapper" data-testid="link-detalle-reporte">
+          <router-link :to="`/detalle/${m.id}`" class="card-link-wrapper" data-testid="link-detalle-reporte">
             <MascotaCard :mascota="m" />
           </router-link>
           
@@ -175,9 +185,8 @@ const modoEdicion = ref(false);
 const usuarioOriginal = ref({});
 const tabActual = ref('datos');
 const usuarioId = ref(null);
-
-// NUEVO: Estado que maneja la selección del filtro activo
 const filtroActual = ref('TODOS');
+const ordenActual = ref('RECIENTES');
 
 const inicialNombre = computed(() => {
   if (usuario.value && usuario.value.nombre) {
@@ -203,12 +212,29 @@ const mensajeExito = ref('');
 const errorDatos = ref('');
 const misReportes = ref([]);
 
-// NUEVO: Propiedad computada que se encarga de filtrar la lista en memoria automáticamente
+// Simplificado: Solo se encarga de filtrar las categorías
 const reportesFiltrados = computed(() => {
-  if (filtroActual.value === 'TODOS') {
-    return misReportes.value;
+  let lista = [...misReportes.value]; // Clonamos la lista para evitar mutaciones directas
+
+  // 1. Filtrar por tipo si aplica
+  if (filtroActual.value !== 'TODOS') {
+    lista = lista.filter(m => m.tipoReporte?.toUpperCase() === filtroActual.value);
   }
-  return misReportes.value.filter(m => m.tipoReporte?.toUpperCase() === filtroActual.value);
+
+  // 2. Ordenar dinámicamente por fecha
+  lista.sort((a, b) => {
+    // Si la fecha falta por alguna razón, usamos la fecha de hoy para no romper el orden
+    const fechaA = new Date(a.fechaReporte || new Date());
+    const fechaB = new Date(b.fechaReporte || new Date());
+
+    if (ordenActual.value === 'RECIENTES') {
+      return fechaB - fechaA; // De más nuevo a más viejo
+    } else {
+      return fechaA - fechaB; // De más viejo a más nuevo
+    }
+  });
+
+  return lista;
 });
 
 onMounted(async () => {
@@ -278,7 +304,6 @@ const cargarMisReportes = async () => {
   try {
     const response = await api.get(`/web/usuarios/${usuarioId.value}/reportes`);
     misReportes.value = response.data.content || response.data;
-    console.log("Reportes procesados con éxito:", misReportes.value);
   } catch (e) { 
     console.error("Error al cargar el historial:", e); 
   }
@@ -345,8 +370,6 @@ const confirmarEliminar = async (id) => {
   text-transform: uppercase;
 }
 
-.card-header h3 { margin: 0; }
-
 .btn-editar {
   background-color: transparent;
   color: var(--color-primary);
@@ -375,7 +398,6 @@ const confirmarEliminar = async (id) => {
 .info-item .label { font-size: 0.85rem; color: #6c757d; font-weight: 600; margin-bottom: 0.2rem; }
 .info-item .value { font-size: 1.05rem; color: #2c3e50; font-weight: 500; }
 
-/* Botones del formulario */
 .form-actions { display: flex; gap: 1rem; margin-top: 2rem; }
 
 .btn-cancelar {
@@ -432,7 +454,6 @@ const confirmarEliminar = async (id) => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- FORMULARIO --- */
 .form-card {
   background: white;
   padding: 2rem;
@@ -442,7 +463,6 @@ const confirmarEliminar = async (id) => {
   margin: 0 auto;
 }
 
-.form-card h3 { margin-top: 0; color: #2c3e50; }
 .form-subtitle { color: #6c757d; margin-bottom: 1.5rem; font-size: 0.95rem; }
 .form-group { margin-bottom: 1.5rem; }
 .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #343a40; }
@@ -460,13 +480,12 @@ const confirmarEliminar = async (id) => {
 .btn-guardar:hover:not(:disabled) { opacity: 0.9; }
 .btn-guardar:disabled { background-color: #6c757d; cursor: wait; }
 
-/* --- ESTADOS Y MENSAJES --- */
 .alert { padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 500; text-align: center; }
 .alert.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 .alert.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 .loader { text-align: center; padding: 2rem; color: #6c757d; font-weight: 500; }
 
-/* --- NUEVOS ESTILOS PARA LA SECCIÓN DE FILTROS --- */
+/* --- FILTROS --- */
 .filtros-container {
   display: flex;
   gap: 0.75rem;
@@ -575,4 +594,49 @@ const confirmarEliminar = async (id) => {
 .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
 .empty-state h3 { color: var(--color-text); margin-bottom: 0.5rem; }
 .empty-state p { color: #64748B; max-width: 400px; margin: 0 auto; }
+
+.filtros-y-orden-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Reducimos el margen inferior que tenía antes para que se alinee con el selector */
+.filtros-container {
+  margin-bottom: 0 !important; 
+}
+
+/* NUEVO: Contenedor y diseño del Select de Ordenación */
+.orden-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orden-container label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.select-orden {
+  padding: 0.4rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background-color: white;
+  color: #4a5568;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.select-orden:focus {
+  border-color: var(--color-primary, #388A98);
+  box-shadow: 0 0 0 2px rgba(56, 138, 152, 0.15);
+}
 </style>

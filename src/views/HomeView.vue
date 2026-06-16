@@ -28,7 +28,14 @@
             <span :class="['badge', mascota.tipoReporte.toLowerCase()]">
               {{ mascota.tipoReporte === 'PERDIDA' ? 'Perdida' : 'Encontrada' }}
             </span>
-            <h3>{{ mascota.nombre || 'Mascota sin nombre' }}</h3>
+            
+            <div class="card-header-row">
+              <h3>{{ mascota.nombre || 'Mascota sin nombre' }}</h3>
+              <span v-if="obtenerTiempoRelativo(mascota.fechaReporte)" class="card-time" :title="mascota.fechaReporte">
+                🕒 {{ obtenerTiempoRelativo(mascota.fechaReporte) }}
+              </span>
+            </div>
+
             <p class="resumen">{{ mascota.resumen }}</p>
             <router-link :to="`/detalle/${mascota.id}`" class="enlace-detalle">Ver detalle</router-link>
           </div>
@@ -66,17 +73,42 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import api from '../api/axiosConfig.js'; // 💡 Ruta de Axios corregida
+import api from '../api/axiosConfig.js'; 
 
 const ultimosReportes = ref([]);
 const cargando = ref(true);
+
+// NUEVO: Función para formatear el tiempo relativo directamente en las tarjetas del bucle
+const obtenerTiempoRelativo = (fechaString) => {
+  if (!fechaString) return '';
+
+  const fechaReporte = new Date(fechaString);
+  const fechaActual = new Date();
+
+  const utc1 = Date.UTC(fechaReporte.getFullYear(), fechaReporte.getMonth(), fechaReporte.getDate());
+  const utc2 = Date.UTC(fechaActual.getFullYear(), fechaActual.getMonth(), fechaActual.getDate());
+
+  const milisegundosPorDia = 1000 * 60 * 60 * 24;
+  const diferenciaDias = Math.floor((utc2 - utc1) / milisegundosPorDia);
+
+  if (diferenciaDias < 0) return 'Reciente';
+  if (diferenciaDias === 0) return 'Hoy';
+  if (diferenciaDias === 1) return 'Ayer';
+  if (diferenciaDias < 7) return `Hace ${diferenciaDias} días`;
+  if (diferenciaDias < 30) {
+    const semanas = Math.floor(diferenciaDias / 7);
+    return semanas === 1 ? 'Hace 1 sem.' : `Hace ${semanas} sem.`;
+  }
+  
+  const meses = Math.floor(diferenciaDias / 30);
+  return meses === 1 ? 'Hace 1 mes' : `Hace ${meses} meses`;
+};
 
 const cargarUltimosReportes = async () => {
   try {
     const response = await api.get('/web/mascotas');
     const todasLasMascotas = response.data.content || response.data;
 
-    // Ordenamos de manera descendente para tener los últimos registros creados
     ultimosReportes.value = todasLasMascotas
       .sort((a, b) => b.id - a.id)
       .slice(0, 5);
@@ -231,9 +263,29 @@ h2 {
 .badge.perdida { background-color: var(--color-primary); }
 .badge.encontrada { background-color: var(--color-secondary); }
 
+/* NUEVO: Contenedor flex para alinear título y la fecha de forma responsiva */
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
 .card-body h3 {
   font-size: 1.1rem;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
+}
+
+/* NUEVO: Estilo estético para la fecha en el Home (abreviado sem. para ajustar espacio) */
+.card-time {
+  font-size: 0.72rem;
+  color: #555555;
+  background-color: #f1f3f5;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .resumen {
@@ -250,7 +302,7 @@ h2 {
   font-size: 0.9rem;
 }
 
-/* --- HOW IT WORKS (4 COLUMNS) --- */
+/* --- HOW IT WORKS --- */
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

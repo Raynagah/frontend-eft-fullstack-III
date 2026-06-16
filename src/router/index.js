@@ -47,13 +47,41 @@ const routes = [
     component: () => import('../views/BandejaNotificacionesView.vue'),
     meta: { requiresAuth: true } // Requiere estar logueado para ver sus notificaciones
   },
+
   {
     path: '/admin',
     name: 'admin',
+    component: () => import('../views/admin/AdminDashboardView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+
+  {
+    path: '/admin/usuarios',
+    name: 'admin-usuarios',
     component: () => import('../views/admin/UsuariosAdminView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+
+  {
+    path: '/admin/usuarios/nuevo',
+    name: 'admin-crear-usuario',
+    component: () => import('../views/admin/CrearUsuarioView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+
+  {
+    path: '/admin/usuarios/editar/:id',
+    name: 'admin-editar-usuario',
+    component: () => import('../views/admin/EditarUsuarioView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+
+  {
+    path: '/admin/reportes',
+    name: 'AdminReportes',
+    component: () => import('../views/admin/ReportesView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
-  
 ]
 
 const router = createRouter({

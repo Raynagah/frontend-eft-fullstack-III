@@ -17,7 +17,12 @@
     </div>
 
     <div class="card-content">
-      <h3 class="card-title">{{ mascota.nombre || 'Sin nombre' }}</h3>
+      <div class="card-header-row">
+        <h3 class="card-title">{{ mascota.nombre || 'Sin nombre' }}</h3>
+        <span v-if="tiempoRelativo" class="card-time" :title="mascota.fechaReporte">
+          🕒 {{ tiempoRelativo }}
+        </span>
+      </div>
       
       <p class="card-resumen">{{ mascota.resumen }}</p>
     </div>
@@ -40,7 +45,34 @@ const props = defineProps({
   }
 });
 
-// NUEVO: Formateo de texto del tipo de reporte con emojis descriptivos
+// NUEVO: Lógica matemática para calcular la diferencia de días de manera amigable
+const tiempoRelativo = computed(() => {
+  if (!props.mascota.fechaReporte) return '';
+
+  const fechaReporte = new Date(props.mascota.fechaReporte);
+  const fechaActual = new Date();
+
+  // Ignorar diferencias de horas/minutos calculando la base del día a medianoche
+  const utc1 = Date.UTC(fechaReporte.getFullYear(), fechaReporte.getMonth(), fechaReporte.getDate());
+  const utc2 = Date.UTC(fechaActual.getFullYear(), fechaActual.getMonth(), fechaActual.getDate());
+
+  const milisegundosPorDia = 1000 * 60 * 60 * 24;
+  const diferenciaDias = Math.floor((utc2 - utc1) / milisegundosPorDia);
+
+  if (diferenciaDias < 0) return 'Reciente'; // Resguardo por desfases de zona horaria
+  if (diferenciaDias === 0) return 'Hoy';
+  if (diferenciaDias === 1) return 'Ayer';
+  if (diferenciaDias < 7) return `Hace ${diferenciaDias} días`;
+  if (diferenciaDias < 30) {
+    const semanas = Math.floor(diferenciaDias / 7);
+    return semanas === 1 ? 'Hace 1 semana' : `Hace ${semanas} semanas`;
+  }
+  
+  const meses = Math.floor(diferenciaDias / 30);
+  return meses === 1 ? 'Hace 1 mes' : `Hace ${meses} meses`;
+});
+
+// Formateo de texto del tipo de reporte con emojis descriptivos
 const tipoReporteTexto = computed(() => {
   const tipo = (props.mascota.tipoReporte || '').toUpperCase();
   if (tipo === 'PERDIDA') return '🔍 Perdida';
@@ -48,7 +80,7 @@ const tipoReporteTexto = computed(() => {
   return props.mascota.tipoReporte;
 });
 
-// NUEVO: Clases dinámicas de color para el tipo de reporte
+// Clases dinámicas de color para el tipo de reporte
 const tipoReporteClase = computed(() => {
   const tipo = (props.mascota.tipoReporte || '').toUpperCase();
   if (tipo === 'PERDIDA') return 'reporte-perdida';
@@ -84,7 +116,7 @@ const estadoClase = computed(() => {
   const estado = (props.mascota.sagaStatus || props.mascota.estado || '').toUpperCase();
   if (estado === 'COMPLETED' || estado === 'COMPLETADO') return 'badge-success';
   if (estado === 'PENDING' || estado === 'PENDIENTE') return 'badge-warning';
-  if (estado === 'REJECTED' || estado === 'FAILED' || estado === 'RECHAZADO') return 'badge-danger';
+  if (estado === 'REJECTED' || estado === 'FAILED' || estado === 'RECHAZADO' || estado === 'FAILED_SYNC') return 'badge-danger';
   return 'badge-default';
 });
 </script>
@@ -144,32 +176,55 @@ const estadoClase = computed(() => {
 .badge-estado { right: 10px; }
 
 /* NUEVOS COLORES PARA EL TIPO DE REPORTE */
-.reporte-perdida { background-color: #e53e3e; }     /* Rojo carmesí llamativo */
-.reporte-encontrada { background-color: #0d9488; }  /* Verde esmeralda/Teal */
+.reporte-perdida { background-color: #e53e3e; }
+.reporte-encontrada { background-color: #0d9488; }
 .reporte-default { background-color: #4a5568; }
 
 /* COLORES PARA ESTADO DE LA SAGA */
 .badge-success { background-color: #28a745; }
-.badge-warning { background-color: #ffc107; color: #212529; } /* Texto oscuro para mejor contraste */
+.badge-warning { background-color: #ffc107; color: #212529; }
 .badge-danger { background-color: #dc3545; }
 .badge-default { background-color: var(--color-primary, #007bff); }
 
 .card-content {
   padding: 1.5rem;
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* NUEVO: Contenedor para alinear título y fecha de registro */
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .card-title {
   color: var(--color-primary);
   font-size: 1.25rem;
-  margin-bottom: 0.5rem;
   font-weight: 700;
+  margin: 0;
+}
+
+/* NUEVO: Estilos estéticos para la etiqueta de tiempo */
+.card-time {
+  font-size: 0.78rem;
+  color: #718096;
+  background-color: #edf2f7;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .card-resumen {
   color: #6c757d;
   font-size: 0.95rem;
   line-height: 1.5;
+  margin: 0;
 }
 
 .card-actions {

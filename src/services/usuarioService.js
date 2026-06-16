@@ -10,7 +10,7 @@ const UsuarioService = {
 
   // Obtener todos los usuarios para la tabla
   listarUsuarios() {
-    return api.get(ADMIN_PATH);
+    return api.get(`${ADMIN_PATH}/admin/listar`);
   },
 
   // Obtener un usuario específico por su ID (Ruta pública/general del BFF)
@@ -32,6 +32,8 @@ const UsuarioService = {
   eliminarUsuario(id) {
     return api.delete(`${ADMIN_PATH}/${id}`);
   }
+
+  
 };
 
 export default UsuarioService;

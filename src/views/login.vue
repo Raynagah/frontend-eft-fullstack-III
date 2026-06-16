@@ -47,33 +47,47 @@ const iniciarSesion = async () => {
   cargando.value = true;
 
   try {
-    // Apuntamos a la ruta pública del BFF
     const response = await api.post('/auth/login', {
       correo: correo.value,
       password: password.value
     });
 
-    // Extraemos los datos que envía ms-usuarios a través del BFF
     const { token, sessionId, usuario } = response.data;
 
-    // Guardamos las credenciales de seguridad
     localStorage.setItem('token', token);
     localStorage.setItem('sessionId', sessionId);
     localStorage.setItem('usuario', JSON.stringify(usuario));
 
-    // Agregamos la retroalimentación
     alert(`¡Bienvenido de vuelta, ${usuario.nombre}!`);
 
-    // Redirigimos al usuario a la lista de mascotas
-    router.push('/mascotas');
+    // NUEVA LÓGICA DE REDIRECCIÓN POR ROL
+    if (usuario.tipoUsuario === 'admin') {
+      // Le preguntamos al admin a dónde quiere ir
+      const irAlAdmin = confirm('Has iniciado sesión como Administrador.\n\n¿Deseas ir al Panel de Control?\n(Aceptar = Panel Admin, Cancelar = Inicio)');
+      
+      if (irAlAdmin) {
+        router.push('/admin'); // Asegúrate de que esta sea la ruta de tu panel
+      } else {
+        router.push('/mascotas');
+      }
+    } else {
+      // Si es cliente normal, va directo a mascotas
+      router.push('/mascotas');
+    }
 
   } catch (err) {
-    if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+    if (err.response) {
+      console.log("Código HTTP recibido del servidor:", err.response.status);
+      console.log("Mensaje del servidor:", err.response.data);
+    } else {
+      console.log("No se recibió respuesta del servidor (Posible error de red o CORS)");
+    }
+
+    if (err.response && err.response.status >= 400 && err.response.status < 500) {
       error.value = 'Correo o contraseña incorrectos.';
     } else {
       error.value = 'Error al conectar con el servidor. Intenta más tarde.';
     }
-    console.error('Error en el login:', err);
   } finally {
     cargando.value = false;
   }

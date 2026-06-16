@@ -1,42 +1,52 @@
 <template>
   <div class="app-container">
     <header class="navbar">
-      <router-link to="/" class="navbar-logo-link">
-        <img src="../src/assets/Logo Proyecto fullstack III.png" alt="Logo Sanos y Salvos" class="navbar-logo" />
-      </router-link>
+      
+      <div class="navbar-brand-group">
+        <router-link to="/" class="navbar-logo-link">
+          <img src="../src/assets/Logo Proyecto fullstack III.png" alt="Logo Sanos y Salvos" class="navbar-logo" />
+        </router-link>
+
+        <template v-if="usuarioActual?.tipoUsuario === 'admin'">
+          <router-link 
+            v-if="!route.path.startsWith('/admin')" 
+            to="/admin" 
+            class="nav-link admin-link">
+            ⚙️ Panel Admin
+          </router-link>
+          <router-link 
+            v-else 
+            to="/mascotas" 
+            class="nav-link admin-link">
+            🏠 Volver a la pagina
+          </router-link>
+        </template>
+      </div>
 
       <nav class="navbar-links">
-        <!-- Enlaces de navegación base -->
         <router-link to="/" class="nav-link">Inicio</router-link>
         <router-link to="/mascotas" class="nav-link">Mascotas</router-link>
 
-        <!-- CONFIGURACIÓN 1: ESTADO INVITADO (No autenticado) -->
         <template v-if="!usuarioActual">
           <router-link to="/login" class="nav-link">Iniciar Sesión</router-link>
           <router-link to="/registro" class="nav-link">Registrarse</router-link>
           <button class="btn-reportar" @click="$router.push('/reportar')">Reportar Mascota</button>
         </template>
 
-        <!-- CONFIGURACIÓN 2: ESTADO MIEMBRO (Autenticado) -->
         <template v-else>
-          <!-- Botón "Reportar" justo a la izquierda de la agrupación -->
           <button class="btn-reportar" @click="$router.push('/reportar')">Reportar Mascota</button>
 
-          <!-- Agrupación de Usuario (Perfil -> Campana -> Cerrar Sesión con fondo rojo) -->
           <div class="user-menu-capsule">
             
-            <!-- 1. Perfil -->
             <router-link to="/perfil" class="profile-chip" title="Ir a mi perfil">
               <span class="profile-avatar">👤</span>
               <span class="profile-name">{{ usuarioActual.nombre }}</span>
             </router-link>
 
-            <!-- 2. Campana de Notificaciones Estilizada -->
             <div class="bell-container">
               <CampanaNotificaciones />
             </div>
 
-            <!-- 3. NUEVO: Botón Cerrar Sesión con fondo rojo llamativo -->
             <button class="btn-logout-pill" @click="cerrarSesion">Cerrar Sesión</button>
             
           </div>
@@ -267,6 +277,62 @@ const cerrarSesion = () => {
     flex-direction: column;
     gap: 1.2rem;
     padding: 1.2rem;
+  }
+
+  .navbar-links {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+  }
+
+  .user-menu-capsule {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-reportar {
+    width: 100%;
+  }
+}
+
+/* --- NUEVO: Contenedor para alinear el logo y el botón admin --- */
+.navbar-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem; /* Espacio entre el logo y el botón */
+}
+
+/* Enlace especial para el Admin */
+.admin-link {
+  color: var(--color-accent, #E78E3A); 
+  font-weight: 800;
+  border: 2px dashed var(--color-accent, #E78E3A);
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  background-color: #fffaf0;
+  transition: all 0.3s ease;
+}
+
+.admin-link:hover {
+  background-color: var(--color-accent, #E78E3A);
+  color: white;
+  text-decoration: none;
+}
+
+/* Ajuste Responsivo Actualizado */
+@media (max-width: 950px) {
+  .navbar {
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1.2rem;
+  }
+
+  /* Aseguramos que el logo y botón admin se vean bien en móviles */
+  .navbar-brand-group {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .navbar-links {

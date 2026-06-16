@@ -5,12 +5,27 @@
       <p>Completa este formulario con la mayor cantidad de detalles posible.</p>
     </div>
 
-    <div v-if="exito" class="alerta exito">
+    <!-- NUEVO: Mensaje amigable si no ha iniciado sesión -->
+    <div v-if="!isLoggedIn" class="login-prompt">
+      <div class="login-prompt-content">
+        <span class="icono-mascota">🐾</span>
+        <h3>¡Hola! Para proteger a las mascotas, necesitamos que te identifiques</h3>
+        <p>Inicia sesión o crea una cuenta gratuita para poder publicar y gestionar reportes en nuestra red.</p>
+        <div class="login-actions">
+          <router-link to="/login" class="btn-login">Iniciar Sesión</router-link>
+          <router-link to="/registro" class="btn-registro">Registrarse</router-link>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje de Éxito -->
+    <div v-else-if="exito" class="alerta exito">
       <h3>¡Reporte creado con éxito!</h3>
       <p>La mascota ha sido registrada en el sistema y se ha notificado a la red.</p>
       <router-link to="/mascotas" class="btn-volver">Volver al Dashboard</router-link>
     </div>
 
+    <!-- Formulario (Solo se muestra si está logueado y no ha enviado con éxito) -->
     <form v-else @submit.prevent="enviarReporte" class="formulario-reporte">
 
       <div v-if="error" class="alerta error">
@@ -123,6 +138,9 @@ const exito = ref(false);
 const error = ref(null);
 const obteniendoUbicacion = ref(false);
 
+// NUEVO: Estado de sesión
+const isLoggedIn = ref(true); 
+
 let mapaInstancia = null;
 let marcador = null;
 
@@ -131,7 +149,7 @@ const form = ref({
   usuarioId: null,
   tipoReporte: 'PERDIDA',
   nombre: '',
-  especie: '', // Inicializado vacío para que tome el "Selecciona una opción"
+  especie: '', 
   raza: '',
   color: '',
   tamano: '',
@@ -145,6 +163,9 @@ const form = ref({
 
 // Inicializar el mapa de Leaflet
 const initMap = () => {
+  const mapaEl = document.getElementById('mapa-seleccion');
+  if (!mapaEl) return; // Evita errores si el div del mapa no existe
+
   mapaInstancia = L.map('mapa-seleccion').setView([form.value.latitud, form.value.longitud], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -214,7 +235,6 @@ const ubicarUsuario = () => {
 };
 
 const enviarReporte = async () => {
-  // Verificación de seguridad antes de enviar
   if (!form.value.usuarioId) {
     error.value = "Debes iniciar sesión para reportar una mascota.";
     return;
@@ -245,6 +265,7 @@ onMounted(async () => {
   const userStorage = localStorage.getItem('usuario');
 
   if (userStorage) {
+    isLoggedIn.value = true;
     const userParseado = JSON.parse(userStorage);
 
     // Autocompletar datos técnicos
@@ -254,14 +275,86 @@ onMounted(async () => {
     form.value.nombreContacto = userParseado.nombre || '';
     form.value.telefonoContacto = userParseado.telefono || '';
     form.value.emailContacto = userParseado.correo || userParseado.email || '';
+    
+    // Solo inicializa el mapa si el usuario está logueado y el formulario se renderiza
+    await nextTick();
+    initMap();
+  } else {
+    isLoggedIn.value = false;
   }
-
-  await nextTick();
-  initMap();
 });
 </script>
 
 <style scoped>
+/* NUEVOS ESTILOS PARA LA PESTAÑA DE LOGIN */
+.login-prompt {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 3rem 0;
+}
+
+.login-prompt-content {
+  background-color: var(--color-white, #ffffff);
+  padding: 3rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px;
+  border-top: 5px solid var(--color-primary, #007bff);
+}
+
+.icono-mascota {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.login-prompt-content h3 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.login-prompt-content p {
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.login-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-login, .btn-registro {
+  padding: 0.8rem 2rem;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn-login {
+  background-color: var(--color-primary, #007bff);
+  color: white;
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+.btn-registro {
+  background-color: transparent;
+  color: var(--color-primary, #007bff);
+  border: 2px solid var(--color-primary, #007bff);
+}
+
+.btn-login:hover, .btn-registro:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+/* Resto de los estilos intactos */
 .nota-mapa {
   font-size: 0.9rem;
   color: #17a2b8;
@@ -398,7 +491,6 @@ select:focus {
   font-weight: 600;
 }
 
-/* NUEVOS ESTILOS PARA EL MAPA */
 .mapa-section {
   background-color: #f8f9fa;
   padding: 1.5rem;
