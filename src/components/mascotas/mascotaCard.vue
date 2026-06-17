@@ -74,7 +74,8 @@ const tiempoRelativo = computed(() => {
 
 // Formateo de texto del tipo de reporte con emojis descriptivos
 const tipoReporteTexto = computed(() => {
-  const tipo = (props.mascota.tipoReporte || '').toUpperCase();
+  // Eliminamos el ( || '') porque si llega aquí, el v-if garantizó que existe
+  const tipo = props.mascota.tipoReporte.toUpperCase(); 
   if (tipo === 'PERDIDA') return '🔍 Perdida';
   if (tipo === 'ENCONTRADA') return '🤝 Encontrada';
   return props.mascota.tipoReporte;
@@ -82,7 +83,8 @@ const tipoReporteTexto = computed(() => {
 
 // Clases dinámicas de color para el tipo de reporte
 const tipoReporteClase = computed(() => {
-  const tipo = (props.mascota.tipoReporte || '').toUpperCase();
+  // Eliminamos el ( || '')
+  const tipo = props.mascota.tipoReporte.toUpperCase(); 
   if (tipo === 'PERDIDA') return 'reporte-perdida';
   if (tipo === 'ENCONTRADA') return 'reporte-encontrada';
   return 'reporte-default';
@@ -113,7 +115,8 @@ const imagenMascota = computed(() => {
 });
 
 const estadoClase = computed(() => {
-  const estado = (props.mascota.sagaStatus || props.mascota.estado || '').toUpperCase();
+  // Eliminamos el ( || '') final. Dejamos solo los valores porque el v-if garantizó que al menos uno es verdadero.
+  const estado = (props.mascota.sagaStatus || props.mascota.estado).toUpperCase();
   if (estado === 'COMPLETED' || estado === 'COMPLETADO') return 'badge-success';
   if (estado === 'PENDING' || estado === 'PENDIENTE') return 'badge-warning';
   if (estado === 'REJECTED' || estado === 'FAILED' || estado === 'RECHAZADO' || estado === 'FAILED_SYNC') return 'badge-danger';

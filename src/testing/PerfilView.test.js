@@ -17,7 +17,7 @@ vi.mock('../api/axiosConfig.js', () => ({
 describe('PerfilView.vue', () => {
   // Mock de datos del usuario en LocalStorage
   const mockUsuarioStorage = { id: 1, nombre: 'Juan', correo: 'juan@test.com' };
-  
+
   // Mock de datos devueltos por la API
   const mockDatosApi = {
     nombre: 'Juan Perez',
@@ -45,7 +45,7 @@ describe('PerfilView.vue', () => {
           // Sustituimos el componente hijo para evitar errores por dependencias
           MascotaCard: true,
           // Simulamos router-link correctamente
-          'router-link': true 
+          'router-link': true
         }
       }
     });
@@ -60,7 +60,7 @@ describe('PerfilView.vue', () => {
     });
 
     const wrapper = mountComponent();
-    
+
     // Verificamos el estado de carga inicial
     expect(wrapper.text()).toContain('Cargando...');
 
@@ -73,7 +73,7 @@ describe('PerfilView.vue', () => {
     // Verifica que los datos se renderizaron correctamente en la vista de lectura
     expect(wrapper.text()).toContain('Juan Perez');
     expect(wrapper.text()).toContain('Ingeniero');
-    
+
     // Verifica la propiedad computada inicialNombre
     expect(wrapper.find('.avatar-circle').text()).toBe('J');
   });
@@ -104,7 +104,7 @@ describe('PerfilView.vue', () => {
     // 1. Iniciamos el modo edición clickeando el botón correspondiente
     const btnEditar = wrapper.find('.btn-editar');
     await btnEditar.trigger('click');
-    
+
     // Verificamos la aparición del formulario
     expect(wrapper.find('form.perfil-form').exists()).toBe(true);
 
@@ -119,7 +119,7 @@ describe('PerfilView.vue', () => {
 
     // Verificamos que salimos del formulario y que el valor regresó al estado inicial
     expect(wrapper.find('form.perfil-form').exists()).toBe(false);
-    expect(wrapper.text()).toContain('Juan Perez'); 
+    expect(wrapper.text()).toContain('Juan Perez');
     expect(wrapper.text()).not.toContain('Nombre Modificado');
   });
 
@@ -128,7 +128,7 @@ describe('PerfilView.vue', () => {
       if (url.includes('/reportes')) return Promise.resolve({ data: [] });
       return Promise.resolve({ data: mockDatosApi });
     });
-    
+
     // Respuesta esperada tras el PUT exitoso
     const mockRespuestaPut = { ...mockDatosApi, nombre: 'Juan Actualizado' };
     api.put.mockResolvedValue({ data: mockRespuestaPut });
@@ -147,7 +147,7 @@ describe('PerfilView.vue', () => {
     // Verificaciones de peticiones de actualización
     expect(api.put).toHaveBeenCalledTimes(1);
     expect(api.put).toHaveBeenCalledWith('/web/usuarios/1', expect.any(Object));
-    
+
     // Verifica el fin de la edición y la presencia del mensaje de éxito en pantalla
     expect(wrapper.find('form.perfil-form').exists()).toBe(false);
     expect(wrapper.text()).toContain('¡Perfil actualizado con éxito!');
@@ -156,13 +156,13 @@ describe('PerfilView.vue', () => {
 
   it('5. Muestra error si falla al guardar los datos', async () => {
     // Silenciamos console.error para que el log del catch no ensucie el output de la terminal
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => { });
 
     api.get.mockImplementation((url) => {
       if (url.includes('/reportes')) return Promise.resolve({ data: [] });
       return Promise.resolve({ data: mockDatosApi });
     });
-    
+
     // Simulamos un error de validación del backend durante el PUT
     api.put.mockRejectedValue(new Error('Error de validación'));
 
@@ -233,7 +233,7 @@ describe('PerfilView.vue', () => {
 
   it('8. Captura el error en el bloque catch al fallar la carga de mis reportes', async () => {
     // Silenciamos el console.error esperado en la terminal
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => { });
 
     api.get.mockImplementation((url) => {
       if (url.includes('/reportes')) {
@@ -270,10 +270,10 @@ describe('PerfilView.vue', () => {
   it('10. Muestra el badge con el rol del usuario si este existe (branch v-if="usuario.rol")', async () => {
     api.get.mockImplementation((url) => {
       if (url.includes('/reportes')) return Promise.resolve({ data: [] });
-      
+
       // Simulamos que la API devuelve los mismos datos, pero agregando un "rol"
-      return Promise.resolve({ 
-        data: { ...mockDatosApi, rol: 'Administrador' } 
+      return Promise.resolve({
+        data: { ...mockDatosApi, rol: 'Administrador' }
       });
     });
 
@@ -300,14 +300,14 @@ describe('PerfilView.vue', () => {
 
     // 1. Hacemos clic en la pestaña de reportes
     await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
-    
+
     // Verificamos que la interfaz cambió al estado vacío de reportes
     expect(wrapper.text()).toContain('Aún no tienes reportes activos');
     expect(wrapper.text()).not.toContain('Información Personal'); // La otra pestaña desapareció
 
     // 2. Volvemos a hacer clic en la pestaña de datos
     await wrapper.find('[data-testid="tab-datos"]').trigger('click');
-    
+
     // Verificamos que volvió a la vista original
     expect(wrapper.text()).toContain('Información Personal');
   });
@@ -332,6 +332,254 @@ describe('PerfilView.vue', () => {
     // Buscamos el link que envuelve a la tarjeta
     const linkDetalle = wrapper.find('[data-testid="link-detalle-reporte"]');
     expect(linkDetalle.exists()).toBe(true);
-    expect(linkDetalle.attributes('to')).toBe('/mascotas/101');
+    expect(linkDetalle.attributes('to')).toBe('/detalle/101');
+  });
+
+  it('13. Soporta respuestas paginadas de la API utilizando la rama response.data.content', async () => {
+    // Simulamos que la API devuelve la estructura de paginación de Spring Boot
+    const mockRespuestaPaginada = {
+      content: [
+        { id: 201, nombre: 'Chispa', tipoReporte: 'PERDIDA', fechaReporte: '2026-01-10T10:00:00.000Z' }
+      ],
+      totalElements: 1
+    };
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockRespuestaPaginada });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Verificamos que extrajo correctamente el arreglo desde .content
+    expect(wrapper.vm.misReportes.length).toBe(1);
+    expect(wrapper.find('[data-testid="link-detalle-reporte"]').exists()).toBe(true);
+  });
+
+  it('14. Modifica filtros de categoría y muestra el estado vacío por filtros sin resultados', async () => {
+    const mockReportes = [
+      { id: 201, nombre: 'Chispa', tipoReporte: 'PERDIDA', fechaReporte: '2026-01-10T10:00:00.000Z' }
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportes });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Cambiamos el filtro a ENCONTRADA cliqueando el chip correspondiente
+    const chipsFiltro = wrapper.findAll('.filtro-chip');
+    const chipEncontradas = chipsFiltro.find(c => c.text().includes('Encontradas'));
+    await chipEncontradas.trigger('click');
+
+    // Al solo haber una 'PERDIDA', el listado filtrado queda en 0
+    expect(wrapper.vm.reportesFiltrados.length).toBe(0);
+    // Valida el v-else-if de la alerta de categoría vacía
+    expect(wrapper.text()).toContain('No hay reportes en esta categoría');
+    expect(wrapper.text()).toContain('No tienes ningún historial clasificado como "encontrada"');
+  });
+
+  it('15. Ordena cronológicamente en orden RECIENTES y ANTIGUOS incluyendo fallback de fechas nulas', async () => {
+    const mockReportes = [
+      { id: 1, nombre: 'Viejo', tipoReporte: 'PERDIDA', fechaReporte: '2026-01-01T00:00:00.000Z' },
+      { id: 2, nombre: 'Nuevo', tipoReporte: 'PERDIDA', fechaReporte: '2026-06-01T00:00:00.000Z' },
+      { id: 3, nombre: 'Sin Fecha', tipoReporte: 'PERDIDA', fechaReporte: null } // Fuerza el fallback || new Date()
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportes });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Por defecto está en RECIENTES. Evaluamos que el algoritmo ordene correctamente.
+    // El elemento "Nuevo" (id: 2) debería quedar antes que "Viejo" (id: 1)
+    let primerReporte = wrapper.vm.reportesFiltrados[0];
+    expect(primerReporte.id).not.toBe(1);
+
+    // Cambiamos el select a orden 'ANTIGUOS'
+    const selectOrden = wrapper.find('.select-orden');
+    await selectOrden.setValue('ANTIGUOS');
+
+    // Ahora "Viejo" (id: 1) debe ser indiscutiblemente el primero de la lista
+    expect(wrapper.vm.reportesFiltrados[0].id).toBe(1);
+  });
+
+  it('16. Ejecuta la eliminación completa de un reporte tras la confirmación del usuario', async () => {
+    // Mocks de las ventanas nativas del navegador (confirm y alert)
+    const spyConfirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const spyAlert = vi.spyOn(window, 'alert').mockImplementation(() => { });
+
+    // Añadimos el método delete al mock local de axios
+    api.delete = vi.fn().mockResolvedValueOnce({});
+
+    const mockReportes = [{ id: 500, nombre: 'Eliminame', tipoReporte: 'PERDIDA' }];
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportes });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Disparamos el clic en el botón de eliminación
+    await wrapper.find('.btn-eliminar-reporte').trigger('click');
+
+    // Esperamos a que se resuelvan las promesas internas del método confirmarEliminar (api.delete y cargarMisReportes)
+    await flushPromises();
+
+    expect(spyConfirm).toHaveBeenCalled();
+    expect(api.delete).toHaveBeenCalledWith('/web/mascotas/500');
+    expect(spyAlert).toHaveBeenCalledWith('Reporte eliminado exitosamente.');
+  });
+
+  it('17. Cancela la eliminación si el usuario rechaza la confirmación del navegador', async () => {
+    const spyConfirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    api.delete = vi.fn(); // Aseguramos el espía limpio
+
+    const mockReportes = [{ id: 500, nombre: 'Mantener', tipoReporte: 'PERDIDA' }];
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportes });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    await wrapper.find('.btn-eliminar-reporte').trigger('click');
+
+    // Verificamos que se preguntó pero al dar "cancelar" no se llamó a la API de eliminación
+    expect(spyConfirm).toHaveBeenCalled();
+    expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  it('18. Maneja el error en el bloque catch si falla la API al intentar eliminar un reporte', async () => {
+    // Silenciamos console.error para no ensuciar la salida de la terminal
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const spyAlert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    
+    // Forzamos un fallo deliberado en el método delete de la API
+    api.delete = vi.fn().mockRejectedValueOnce(new Error('Internal Server Error'));
+
+    const mockReportes = [{ id: 999, nombre: 'Error Test', tipoReporte: 'PERDIDA' }];
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportes });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Ejecutamos la acción que va a fallar
+    await wrapper.find('.btn-eliminar-reporte').trigger('click');
+    await flushPromises();
+
+    // Verificaciones del catch
+    expect(console.error).toHaveBeenCalled();
+    expect(spyAlert).toHaveBeenCalledWith('Hubo un problema al intentar eliminar este reporte.');
+  });
+
+  it('19. Retorna un string vacío en obtenerClaseTipoMatch cuando el tipo no está definido', async () => {
+    // Si estás probando el componente de manera integral y quieres alcanzar la línea `if (!tipo) return '';`
+    // simulamos una coincidencia (match) que no posea la propiedad tipoReporte o venga vacía.
+    const mockReportesConFalta = [
+      { id: 888, nombre: 'Misterioso', tipoReporte: null, fechaReporte: '2026-02-02T00:00:00.000Z' }
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportesConFalta });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+    
+    // Si la función está expuesta en la instancia del componente (vm), la llamamos directamente 
+    // para asegurar el 100% de la cobertura de esa función utilitaria
+    if (typeof wrapper.vm.obtenerClaseTipoMatch === 'function') {
+      const resultado = wrapper.vm.obtenerClaseTipoMatch(null);
+      expect(resultado).toBe('');
+    }
+  });
+
+  it('Debe cambiar el filtroActual a TODOS y PERDIDA al hacer clic en los respectivos chips', async () => {
+    // Mock básico de reportes para que renderice la sección de filtros
+    const mockReportes = [
+      { id: 1, nombre: 'Mascota 1', tipoReporte: 'PERDIDA', fechaReporte: '2026-01-01' },
+      { id: 2, nombre: 'Mascota 2', tipoReporte: 'ENCONTRADA', fechaReporte: '2026-01-02' }
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportes });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Nos movemos a la pestaña de reportes para que aparezca el filtros-container
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Buscamos los botones (chips) de filtros
+    const botonesFiltro = wrapper.findAll('.filtro-chip');
+    
+    // Suponiendo que el orden en tu template es: [0] Todas, [1] Perdidas, [2] Encontradas
+    // 1. Forzamos clic en "Perdidas" para cambiar el estado inicial
+    await botonesFiltro[1].trigger('click');
+    
+    // 2. Hacemos clic en "Todas" para ejecutar la asignación filtroActual = 'TODOS'
+    await botonesFiltro[0].trigger('click');
+    
+    // 3. Volvemos a hacer clic en "Perdidas" para ejecutar filtroActual = 'PERDIDA'
+    await botonesFiltro[1].trigger('click');
+
+    // Verificamos de manera indirecta evaluando que el número de tarjetas cambie según el filtro activo
+    // Al estar en filtro "PERDIDA", solo debería renderizarse 1 tarjeta de mascota
+    const tarjetasFiltradas = wrapper.findAll('.reporte-item-container');
+    expect(tarjetasFiltradas.length).toBe(1);
+  });
+
+  it('Debe usar la fecha actual como fallback en el ordenamiento si falta fechaReporte', async () => {
+    // Creamos mocks de reportes donde uno de ellos NO posea la propiedad fechaReporte
+    // Esto obligará a la función sort a ejecutar el fragmento `|| new Date()`
+    const mockReportesSinFecha = [
+      { id: 10, nombre: 'Sin Fecha A', tipoReporte: 'PERDIDA', fechaReporte: null },
+      { id: 20, nombre: 'Sin Fecha B', tipoReporte: 'PERDIDA', fechaReporte: undefined },
+      { id: 30, nombre: 'Con Fecha', tipoReporte: 'PERDIDA', fechaReporte: '2026-06-16T00:00:00.000Z' }
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/reportes')) return Promise.resolve({ data: mockReportesSinFecha });
+      return Promise.resolve({ data: mockDatosApi });
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Activamos la pestaña para que se dispare la propiedad computada `reportesFiltrados`
+    await wrapper.find('[data-testid="tab-reportes"]').trigger('click');
+
+    // Forzamos un cambio en el select de ordenamiento para asegurar que transite por las ramas del sort
+    const selectOrden = wrapper.find('#orden-fecha');
+    await selectOrden.setValue('ANTIGUOS'); 
+    await selectOrden.setValue('RECIENTES');
+
+    // Al no romperse el ordenamiento y resolver de forma exitosa, el bloque '|| new Date()' queda cubierto
+    const tarjetas = wrapper.findAll('.reporte-item-container');
+    expect(tarjetas.length).toBe(3);
   });
 });

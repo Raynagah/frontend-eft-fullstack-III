@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/vue'; 
-import Login from '../views/Login.vue'; 
+import Login from '../views/login.vue'; 
 
 // 1. Mockeamos el Vue Router
 const mockPush = vi.fn();
@@ -137,5 +137,103 @@ describe('Componente: Login.vue', () => {
     expect(screen.getByText('Iniciando sesión...')).toBeTruthy();
 
     resolveApi({ data: { token: '1', sessionId: '2', usuario: { nombre: 'A' } } });
+  });
+
+  // --- TEST 6: Admin elige ir al Panel de Control ---
+  it('debe redirigir al panel de administración si el usuario es admin y acepta el confirm', async () => {
+    // Simulamos que el administrador hace clic en "Aceptar" (true)
+    const spyConfirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(Login, {
+      global: { stubs: ['router-link'] }
+    });
+
+    const mockAdmin = { id: 2, nombre: 'Jefe Admin', tipoUsuario: 'admin' };
+    api.post.mockResolvedValueOnce({
+      data: { token: 't-admin', sessionId: 's-admin', usuario: mockAdmin }
+    });
+
+    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
+    await fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(spyConfirm).toHaveBeenCalled();
+    });
+
+    // Debe navegar a la ruta del panel de control de administración
+    expect(mockPush).toHaveBeenCalledWith('/admin');
+  });
+
+  // --- TEST 7: Admin elige ir al Inicio Regular ---
+  it('debe redirigir a mascotas si el usuario es admin y cancela el confirm', async () => {
+    // Simulamos que el administrador hace clic en "Cancelar" (false)
+    const spyConfirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(Login, {
+      global: { stubs: ['router-link'] }
+    });
+
+    const mockAdmin = { id: 2, nombre: 'Jefe Admin', tipoUsuario: 'admin' };
+    api.post.mockResolvedValueOnce({
+      data: { token: 't-admin', sessionId: 's-admin', usuario: mockAdmin }
+    });
+
+    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
+    await fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(spyConfirm).toHaveBeenCalled();
+    });
+
+    // Al cancelar, debe ir a la ruta pública regular
+    expect(mockPush).toHaveBeenCalledWith('/mascotas');
+  });
+
+  // --- TEST 8: Logueo de errores HTTP en consola (err.response) ---
+  it('debe registrar en consola los detalles del error HTTP cuando el servidor responde', async () => {
+    const spyLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    render(Login, {
+      global: { stubs: ['router-link'] }
+    });
+
+    // Simulamos un error del backend con un objeto response estructurado
+    api.post.mockRejectedValueOnce({
+      response: {
+        status: 422,
+        data: 'Datos inválidos'
+      }
+    });
+
+    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
+    await fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(spyLog).toHaveBeenCalledWith("Código HTTP recibido del servidor:", 422);
+    });
+    expect(spyLog).toHaveBeenCalledWith("Mensaje del servidor:", 'Datos inválidos');
+    
+    spyLog.mockRestore();
+  });
+
+  // --- TEST 9: Logueo de errores de Red/CORS en consola (sin err.response) ---
+  it('debe registrar en consola un problema de red si no se recibe respuesta del servidor', async () => {
+    const spyLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    render(Login, {
+      global: { stubs: ['router-link'] }
+    });
+
+    // Simulamos un error nativo de red puro (por ejemplo, timeout o caída de internet) sin propiedad response
+    api.post.mockRejectedValueOnce(new Error('Network Error'));
+
+    const form = screen.getByRole('button', { name: 'Entrar' }).closest('form');
+    await fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(spyLog).toHaveBeenCalledWith("No se recibió respuesta del servidor (Posible error de red o CORS)");
+    });
+
+    spyLog.mockRestore();
   });
 });

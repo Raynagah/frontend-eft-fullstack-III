@@ -20,11 +20,11 @@ const { mapCallbacks, markerCallbacks, mockMarker, mockMap } = vi.hoisted(() => 
   map.setView = vi.fn(() => map);
   map.on = vi.fn((event, cb) => { mapCbs[event] = cb; return map; });
 
-  return { 
-    mapCallbacks: mapCbs, 
-    markerCallbacks: markerCbs, 
-    mockMarker: marker, 
-    mockMap: map 
+  return {
+    mapCallbacks: mapCbs,
+    markerCallbacks: markerCbs,
+    mockMarker: marker,
+    mockMap: map
   };
 });
 
@@ -54,18 +54,23 @@ describe('ReportarView.vue', () => {
   // 2. CONFIGURACIÓN ANTES DE CADA TEST
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
-    
+
+    localStorage.setItem('usuario', JSON.stringify({
+      id: 1,
+      nombre: 'Usuario Test',
+      email: 'test@test.com'
+    }));
+
     // Silenciar logs y mockear alert
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
-    
+    vi.spyOn(console, 'error').mockImplementation(() => { });
+    vi.spyOn(console, 'log').mockImplementation(() => { });
+    vi.spyOn(window, 'alert').mockImplementation(() => { });
+
     // Simular Geolocation por defecto (éxito)
     global.navigator.geolocation = {
-      getCurrentPosition: vi.fn((success) => 
+      getCurrentPosition: vi.fn((success) =>
         success({
-          coords: { latitude: -41.4693, longitude: -72.9424 } 
+          coords: { latitude: -41.4693, longitude: -72.9424 }
         })
       )
     };
@@ -74,10 +79,12 @@ describe('ReportarView.vue', () => {
   afterEach(() => {
     delete global.navigator.geolocation;
     vi.restoreAllMocks();
+    document.body.innerHTML = '';
   });
 
   const createWrapper = () => mount(ReportarView, {
-    global: { stubs: ['router-link'] }
+    global: { stubs: ['router-link'] },
+    attachTo: document.body
   });
 
   // 3. CASOS DE PRUEBA
@@ -92,7 +99,7 @@ describe('ReportarView.vue', () => {
     // Cambiamos a ENCONTRADA
     const selectTipo = wrapper.find('[data-testid="select-tipo-reporte"]');
     await selectTipo.setValue('ENCONTRADA');
-    
+
     // El nombre ya no debería ser requerido
     expect(inputNombre.attributes('required')).toBeUndefined();
   });
@@ -102,7 +109,7 @@ describe('ReportarView.vue', () => {
       id: 99,
       nombre: 'Ana',
       telefono: '987654',
-      email: 'ana@test.com' 
+      email: 'ana@test.com'
     }));
 
     const wrapper = createWrapper();
@@ -138,7 +145,7 @@ describe('ReportarView.vue', () => {
 
   it('5. Alerta si el navegador no soporta geolocalización', async () => {
     delete global.navigator.geolocation; // Forzamos falla
-    
+
     const wrapper = createWrapper();
     await flushPromises();
 
@@ -156,21 +163,21 @@ describe('ReportarView.vue', () => {
     });
 
     await wrapper.find('.btn-ubicacion').trigger('click');
-    
+
     expect(window.alert).toHaveBeenCalledWith(
       'No pudimos obtener una ubicación precisa. Por favor, marca el punto manualmente en el mapa.'
     );
     expect(wrapper.vm.obteniendoUbicacion).toBe(false);
   });
 
-  it('7. Muestra error si se envía sin sesión (usuarioId null)', async () => {
+  it('7. Muestra mensaje de protección si se entra sin sesión', async () => {
+    localStorage.clear(); // Forzamos el estado de invitado
     const wrapper = createWrapper();
     await flushPromises();
 
-    await wrapper.vm.enviarReporte();
-
-    expect(wrapper.find('.alerta.error').text()).toContain('Debes iniciar sesión para reportar una mascota.');
-    expect(api.post).not.toHaveBeenCalled();
+    // Verificamos que el formulario NO esté y que el mensaje aparezca
+    expect(wrapper.text()).toContain('Para proteger a las mascotas, necesitamos que te identifiques');
+    expect(wrapper.find('form').exists()).toBe(false);
   });
 
   it('8. Envía el reporte exitosamente', async () => {
@@ -238,7 +245,7 @@ describe('ReportarView.vue', () => {
     // Verificamos que las coordenadas se actualizaron con los datos de nuestro mock
     expect(wrapper.vm.form.latitud).toBe(-41.4693);
     expect(wrapper.vm.form.longitud).toBe(-72.9424);
-    
+
     // Verificamos que el estado de carga vuelve a falso
     expect(wrapper.vm.obteniendoUbicacion).toBe(false);
 
@@ -249,10 +256,10 @@ describe('ReportarView.vue', () => {
 
   it('13. Muestra el estado de carga al buscar ubicación (cubre línea 76)', async () => {
     const wrapper = createWrapper();
-    
+
     // Sobrescribimos el mock SOLO para este test, dándole una función vacía 
     // que nunca se resuelve. Esto "congela" el estado de carga.
-    global.navigator.geolocation.getCurrentPosition.mockImplementationOnce(() => {});
+    global.navigator.geolocation.getCurrentPosition.mockImplementationOnce(() => { });
 
     await wrapper.find('.btn-ubicacion').trigger('click');
     await flushPromises(); // Damos tiempo a Vue para actualizar el DOM

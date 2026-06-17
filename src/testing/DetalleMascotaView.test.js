@@ -1,6 +1,6 @@
 import { reactive, nextTick } from 'vue';
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 import api from '../api/axiosConfig.js';
 import DetalleMascotaView from '../views/DetalleMascotaView.vue';
 
@@ -29,7 +29,7 @@ vi.mock('vue-router', () => ({
   useRoute: () => mockRoute
 }));
 
-// 3. Mock unificado de Leaflet (para que coincida con la importación del componente)
+// 3. Mock unificado de Leaflet
 const mockMapInstance = { setView: vi.fn().mockReturnThis(), remove: vi.fn() };
 vi.mock('leaflet', () => ({
   default: {
@@ -44,10 +44,14 @@ vi.mock('leaflet', () => ({
   }
 }));
 
+beforeAll(() => {
+  // Simulamos window.scrollTo para que JSDOM no se queje
+  window.scrollTo = vi.fn();
+});
+
 describe('DetalleMascotaView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reestablecemos el ID por defecto antes de cada prueba
     mockRoute.params.id = '123';
   });
 
@@ -118,11 +122,9 @@ describe('DetalleMascotaView.vue', () => {
     expect(wrapper.text()).toContain('Posibles Coincidencias');
     expect(wrapper.text()).toContain('Max');
 
-    // Capturamos el botón y hacemos clic
     const botonMatch = wrapper.find('.btn-ver-match');
     await botonMatch.trigger('click');
 
-    // Verificamos que haga push a la ruta de detalle
     expect(mockPush).toHaveBeenCalledWith('/detalle/456');
   });
 
@@ -289,9 +291,7 @@ describe('DetalleMascotaView.vue', () => {
 
   it('13. La propiedad computada estadoClase retorna un string vacío si mascota.value es null (estado de carga inicial)', () => {
     api.get.mockReturnValue(new Promise(() => { }));
-
     const wrapper = mountComponent();
-
     expect(wrapper.vm.estadoClase).toBe('');
   });
 
@@ -363,7 +363,120 @@ describe('DetalleMascotaView.vue', () => {
     const wrapper = mountComponent();
 
     await flushPromises();
-
     expect(wrapper.text()).toContain('Match sin ID');
+  });
+
+  // =========================================================================
+  // COBERTURA DE CAPTURAS: clasetipoReporte, obtenerClaseTipoMatch Y BADGES MINI
+  // =========================================================================
+
+  it('17. Retorna string vacío en claseTipoReporte si la mascota es null', () => {
+    // Forzamos el estado inicial de carga donde api.get no ha resuelto y mascota es null
+    api.get.mockReturnValue(new Promise(() => { }));
+    const wrapper = mountComponent();
+
+    // Línea 196 de claseTipoReporte cubierta
+    expect(wrapper.vm.claseTipoReporte).toBe('');
+  });
+
+  it('18. Usa fallback de string vacío si tipoReporte no está definido en la mascota', async () => {
+    api.get.mockResolvedValueOnce({
+      data: {
+        id: '123',
+        nombre: 'Sin Tipo',
+        tipoReporte: null, // Fuerza el operador || '' de la línea 197
+        ubicacion: { latitud: -41.4, longitud: -72.9 }
+      }
+    });
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    expect(wrapper.vm.claseTipoReporte).toBe('tipo-perdida');
+  });
+
+  it('19. Cubre la función obtenerClaseTipoMatch cuando el tipo no existe o es PERDIDA', async () => {
+    // Probamos directamente la función de utilidad expuesta en la vm
+    api.get.mockResolvedValueOnce({ data: { id: '123' } });
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Línea 289: si !tipo return ''
+    expect(wrapper.vm.obtenerClaseTipoMatch(null)).toBe('');
+    expect(wrapper.vm.obtenerClaseTipoMatch(undefined)).toBe('');
+
+    // Línea 290 (bifurcación alternativa de la condición ternaria)
+    expect(wrapper.vm.obtenerClaseTipoMatch('PERDIDA')).toBe('tipo-perdida-mini');
+  });
+
+  it('20. Renderiza el badge-tipo-mini en el template para coincidencias ENCONTRADA y PERDIDA', async () => {
+    const mockMascotaConCoincidencias = {
+      id: '123',
+      nombre: 'Falkor',
+      posiblesCoincidencias: [
+        { mascotaId: '1', nombreMascota: 'Match1', tipoReporte: 'ENCONTRADA', porcentajeSimilitud: 85 },
+        { mascotaId: '2', nombreMascota: 'Match2', tipoReporte: 'PERDIDA', porcentajeSimilitud: 55 }
+      ]
+    };
+
+    api.get.mockResolvedValue({ data: mockMascotaConCoincidencias });
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Esto obliga a Vue a ejecutar las líneas del template 81-86 en ambas ramas
+    const badgesMini = wrapper.findAll('.badge-tipo-mini');
+    expect(badgesMini.length).toBe(2);
+    expect(badgesMini[0].text()).toContain('ENCONTRADA');
+    expect(badgesMini[1].text()).toContain('PERDIDA');
+  });
+
+  // =========================================================================
+  // COBERTURA DE CAPTURA: fechaFormateated Y TODAS LAS RAMAS DE tiempoRelativo
+  // =========================================================================
+
+  it('21. Formatea la fecha correctamente con Intl.DateTimeFormat', async () => {
+    // Seteamos una fecha fija conocida: 29 de marzo de 2026, 00:43
+    const fechaFija = '2026-03-29T00:43:00.000Z';
+    api.get.mockResolvedValueOnce({
+      data: { id: '123', fechaReporte: fechaFija }
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+
+    // Comprobamos que pase por la instanciación de 'new Date' y retorne el formato humano
+    expect(wrapper.vm.fechaFormateada).not.toBe('');
+    expect(wrapper.text()).toContain('2026');
+    expect(wrapper.text()).toContain('marzo');
+  });
+
+  it('22. Cubre exhaustivamente los bloques matemáticos intermedios de tiempoRelativo', async () => {
+    const mockFechaActual = new Date('2026-06-16T12:00:00.000Z');
+    // Usamos vi.useFakeTimers para controlar el "new Date()" interno del componente
+    vi.useFakeTimers();
+    vi.setSystemTime(mockFechaActual);
+
+    // Caso A: "Hace 4 días" (diferenciaDias = 4, entra en < 7)
+    const fechaHace4Dias = new Date('2026-06-12T12:00:00.000Z');
+    api.get.mockResolvedValueOnce({ data: { id: '1', fechaReporte: fechaHace4Dias.toISOString() } });
+    let wrapper = mountComponent();
+    await flushPromises();
+    expect(wrapper.vm.tiempoRelativo).toBe('Hace 4 días');
+
+    // Caso B: "Hace X semanas" (diferenciaDias = 15, semanas = 2, semanas !== 1)
+    const fechaHace2Semanas = new Date('2026-06-01T12:00:00.000Z');
+    api.get.mockResolvedValueOnce({ data: { id: '1', fechaReporte: fechaHace2Semanas.toISOString() } });
+    wrapper = mountComponent();
+    await flushPromises();
+    expect(wrapper.vm.tiempoRelativo).toBe('Hace 2 semanas');
+
+    // Caso C: "Hace X meses" (diferenciaDias = 65, meses = 2, meses !== 1)
+    const fechaHace2Meses = new Date('2026-04-12T12:00:00.000Z');
+    api.get.mockResolvedValueOnce({ data: { id: '1', fechaReporte: fechaHace2Meses.toISOString() } });
+    wrapper = mountComponent();
+    await flushPromises();
+    expect(wrapper.vm.tiempoRelativo).toBe('Hace 2 meses');
+
+    // Restauramos el tiempo global de testing
+    vi.useRealTimers();
   });
 });
