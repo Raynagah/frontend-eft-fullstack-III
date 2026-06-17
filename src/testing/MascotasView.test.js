@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/vue';
-import MascotasView from '../views/MascotasView.vue'; // Ajustar la ruta si es necesario
+import MascotasView from '../views/MascotasView.vue';
 
 // 1. Mockeamos la configuración de Axios
 vi.mock('../api/axiosConfig.js', () => ({
@@ -147,8 +147,6 @@ describe('Vista: MascotasView.vue', () => {
 
   // --- TEST 6 ---
   it('debe asignar un arreglo vacío si la API devuelve datos que no son un array', async () => {
-    // Usamos un objeto vacío válido. La línea 53 resolverá data = {} sin romperse,
-    // y la línea 54 evaluará Array.isArray({}) como FALSE, forzando la asignación de []
     api.get.mockResolvedValueOnce({
       data: { content: {} } 
     });

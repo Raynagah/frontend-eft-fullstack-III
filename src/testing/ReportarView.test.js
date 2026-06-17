@@ -1,12 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
-import ReportarView from '../views/ReportarView.vue'; // Ajusta la ruta si es necesario
+import ReportarView from '../views/ReportarView.vue';
 import api from '../api/axiosConfig.js';
 
-// ==========================================================
-// 1. MOCKS GLOBALES AVANZADOS (Hoisted para capturar eventos)
-// ==========================================================
-
+// 1. MOCKS GLOBALES 
 const { mapCallbacks, markerCallbacks, mockMarker, mockMap } = vi.hoisted(() => {
   const mapCbs = {};
   const markerCbs = {};
@@ -36,7 +33,6 @@ vi.mock('../api/axiosConfig.js', () => ({
   default: { post: vi.fn() }
 }));
 
-// Mock si usas Leaflet vía import (NPM)
 vi.mock('leaflet', () => ({
   default: {
     map: vi.fn(() => mockMap),
@@ -46,7 +42,6 @@ vi.mock('leaflet', () => ({
   }
 }));
 
-// Mock si usas Leaflet de forma global (CDN en el index.html)
 vi.stubGlobal('L', {
   map: vi.fn(() => mockMap),
   tileLayer: vi.fn(() => ({ addTo: vi.fn(() => mockMap) })),
@@ -56,9 +51,7 @@ vi.stubGlobal('L', {
 
 describe('ReportarView.vue', () => {
 
-  // ==========================================================
   // 2. CONFIGURACIÓN ANTES DE CADA TEST
-  // ==========================================================
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -87,10 +80,7 @@ describe('ReportarView.vue', () => {
     global: { stubs: ['router-link'] }
   });
 
-  // ==========================================================
   // 3. CASOS DE PRUEBA
-  // ==========================================================
-
   it('1. Renderiza por defecto y cambia campos dinámicos según tipoReporte', async () => {
     const wrapper = createWrapper();
     await flushPromises();

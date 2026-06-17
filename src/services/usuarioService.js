@@ -1,6 +1,5 @@
 import api from '../api/axiosConfig';
 
-// Definimos la ruta base del BFF para la gestión de administradores
 const ADMIN_PATH = '/web/admin/usuarios';
 
 const UsuarioService = {

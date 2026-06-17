@@ -64,7 +64,6 @@ describe('Componente MascotaCard.vue', () => {
     });
 
     const imagen = screen.getByRole('img');
-    // Verifica tu computed property: si es perro devuelve '/img/perro-default.png'
     expect(imagen.getAttribute('src')).toBe('/img/perro-default.png');
   });
 

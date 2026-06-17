@@ -23,7 +23,7 @@ export const useUsuarioAdminStore = defineStore('usuarioAdmin', {
     clientes: (state) => state.usuarios.filter(u => u.tipoUsuario === 'cliente'),
     totalClientes: (state) => state.usuarios.filter(u => u.tipoUsuario === 'cliente').length,
 
-    // Usuarios Recientes (Asumiendo que un ID mayor significa registro más reciente)
+    // Usuarios Recientes
     usuariosRecientes: (state) => {
       return [...state.usuarios].sort((a, b) => b.id - a.id).slice(0, 5);
     },

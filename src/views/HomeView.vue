@@ -66,7 +66,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import api from '../api/axiosConfig.js'; // 💡 Ruta de Axios corregida
+import api from '../api/axiosConfig.js';
 
 const ultimosReportes = ref([]);
 const cargando = ref(true);

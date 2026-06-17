@@ -92,35 +92,26 @@ const estadoClase = computed(() => {
   transform: translateY(-5px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
-
-/* --- MODIFICACIÓN AQUÍ --- */
 .card-image {
   position: relative;
   height: 200px;
   width: 100%;
-  background-color: #f8f9fa; /* Fondo gris suave para cuando la imagen no llena todo */
-  
-  /* Centrado perfecto del ícono */
+  background-color: #f8f9fa;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* Asegura que NADA se salga */
-  padding: 1rem; /* Espaciado para que el ícono no toque los bordes */
+  overflow: hidden;
+  padding: 1rem; 
 }
 
 .card-image img {
-  /* Evitamos que se estire innecesariamente */
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
-  
-  /* Contain: Se ajusta al tamaño máximo sin cortarse ni deformarse */
   object-fit: contain; 
 }
-/* --- FIN MODIFICACIÓN --- */
 
-/* Resto de estilos (Intactos) */
 .badge {
   position: absolute;
   top: 10px;
@@ -131,7 +122,7 @@ const estadoClase = computed(() => {
   font-weight: 700;
   color: white;
   letter-spacing: 0.5px;
-  z-index: 2; /* Asegurar que esté sobre la foto */
+  z-index: 2;
 }
 
 .badge-success { background-color: #28a745; }

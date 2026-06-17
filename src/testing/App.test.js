@@ -40,7 +40,7 @@ describe('Componente Core: App.vue', () => {
     mockRoute.fullPath = '/';
   });
 
-  // --- TEST 1: Rama Invitado (v-if="!usuarioActual") ---
+  // --- TEST 1: Rama Invitado ---
   it('debe mostrar los enlaces de inicio de sesión si no hay un usuario autenticado', async () => {
     render(App, { global: globalOptions });
     await nextTick();
@@ -54,9 +54,9 @@ describe('Componente Core: App.vue', () => {
     expect(screen.queryByText('Salir')).toBeNull();
   });
 
-  // --- TEST 2: Rama Autenticado (v-else) + Función onMounted() ---
+  // --- TEST 2: Rama Autenticado ---
   it('debe renderizar el nombre del usuario y el botón de Salir si existe sesión en localStorage', async () => {
-    // Definimos el localStorage ANTES de cualquier interacción
+    // Definimos el localStorage antes de cualquier interacción
     const mockUser = { nombre: 'Andrés' };
     localStorage.setItem('usuario', JSON.stringify(mockUser));
 
@@ -65,7 +65,7 @@ describe('Componente Core: App.vue', () => {
     // Forzamos a Vue a procesar el ciclo onMounted y actualizar la vista reactiva
     await nextTick();
 
-    // Usamos expresiones regulares más flexibles (i para ignorar mayúsculas/minúsculas si fuera necesario)
+    // Usamos expresiones regulares más flexibles
     expect(screen.getByText(/Andrés/)).toBeTruthy();
     expect(screen.getByText('Salir')).toBeTruthy();
 

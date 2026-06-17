@@ -1,12 +1,12 @@
 import { reactive, nextTick } from 'vue';
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import api from '../api/axiosConfig.js'; // Ajustado para usar tu cliente personalizado
+import api from '../api/axiosConfig.js';
 import DetalleMascotaView from '../views/DetalleMascotaView.vue';
 
 enableAutoUnmount(afterEach);
 
-// 1. Mock de tu cliente API personalizado
+// 1. Mock de cliente API personalizado
 vi.mock('../api/axiosConfig.js', () => ({
   default: {
     get: vi.fn(),

@@ -1,6 +1,6 @@
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import api from '../api/axiosConfig.js'; // Asegúrate de que la ruta sea correcta
+import api from '../api/axiosConfig.js';
 import PerfilView from '../views/PerfilView.vue';
 
 // 1. Desmontaje automático entre pruebas

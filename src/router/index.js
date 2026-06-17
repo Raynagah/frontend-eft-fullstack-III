@@ -20,7 +20,6 @@ const routes = [
   {
     path: '/mascotas',
     name: 'mascotas',
-    // Contenedor principal que consume el BFF
     component: () => import('../views/MascotasView.vue')
   },
   {
@@ -65,7 +64,6 @@ router.beforeEach((to, from, next) => {
   if (usuarioRaw) {
     try {
       const usuario = JSON.parse(usuarioRaw);
-      // Extraemos el rol. Asegúrate de que coincida con cómo guardas el DTO en el login
       userRole = usuario.tipoUsuario; // 'admin' o 'cliente'
     } catch (e) {
       console.error("Error al leer el usuario del localStorage", e);

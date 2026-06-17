@@ -220,7 +220,7 @@ const obtenerClaseSimilitud = (porcentaje) => {
   return 'fill-baja';
 };
 
-// 💡 Escuchamos cambios en la URL (por ejemplo, saltar del id 1 al id 5 mediante coincidencias)
+// Escuchamos cambios en la URL (por ejemplo, saltar del id 1 al id 5 mediante coincidencias)
 watch(() => route.params.id, (nuevoId) => {
   if (nuevoId) {
     cargarDetalle(nuevoId);

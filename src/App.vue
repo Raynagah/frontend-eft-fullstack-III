@@ -59,14 +59,13 @@ onMounted(() => {
   verificarSesion();
 });
 
-// TRUCO MAGICO: Escuchamos cada vez que cambia la URL (por ejemplo, al volver del login).
-// Así la Navbar se actualiza al instante sin recargar el navegador.
+
 watch(() => route.fullPath, () => {
   verificarSesion();
 });
 
 const cerrarSesion = () => {
-  // Limpiamos todoo rastro de la sesión
+  // Limpiamos todo rastro de la sesión
   localStorage.removeItem('token');
   localStorage.removeItem('sessionId');
   localStorage.removeItem('usuario');

@@ -36,7 +36,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import api from '../api/axiosConfig.js';
-// 4. Asegúrate de importar el componente (ajusta la ruta según tus carpetas)
 import MascotaCard from '../components/mascotas/mascotaCard.vue';
 
 const mascotas = ref([]);
