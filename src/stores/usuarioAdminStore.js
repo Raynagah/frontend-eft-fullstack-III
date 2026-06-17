@@ -31,19 +31,24 @@ export const useUsuarioAdminStore = defineStore('usuarioAdmin', {
 
   // 3. ACTIONS: Métodos para interactuar con el backend y modificar el state
   actions: {
-    async cargarUsuarios() {
-      this.cargando = true;
-      this.error = null;
-      try {
-        const response = await UsuarioService.listarUsuarios();
-        this.usuarios = response.data; // Guardamos la lista del backend en el estado
-      } catch (error) {
-        console.error('Error al cargar usuarios:', error);
-        this.error = error.response?.data?.error || 'No se pudieron cargar los usuarios';
-      } finally {
-        this.cargando = false;
-      }
-    },
+    // En tu archivo de Pinia/Store
+  async cargarUsuarios() {
+    this.cargando = true;
+    try {
+      // IMPORTANTE: Asegúrate de que esta ruta llame al nuevo endpoint del BFF
+      const { data } = await UsuarioService.listarUsuarios();
+      this.usuarios = data; // Aquí ya debe traer el campo cantidadReportes
+      
+      // Recalcular totales para las tarjetas de arriba
+      this.totalUsuarios = data.length;
+      this.totalAdministradores = data.filter(u => u.tipoUsuario === 'admin').length;
+      this.totalClientes = data.filter(u => u.tipoUsuario === 'cliente').length;
+    } catch (error) {
+      this.error = "Error al cargar los usuarios.";
+    } finally {
+      this.cargando = false;
+    }
+  },
 
     async crearUsuario(nuevoUsuario) {
       this.cargando = true;
@@ -96,6 +101,22 @@ export const useUsuarioAdminStore = defineStore('usuarioAdmin', {
       } finally {
         this.cargando = false;
       }
+    },
+    async obtenerUsuario(id) {
+    this.cargando = true;
+    this.error = null;
+    try {
+      const response = await UsuarioService.obtenerUsuario(id); 
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener usuario:', error);
+      this.error = 'No se pudo obtener el usuario';
+      throw error;
+    } finally {
+      this.cargando = false;
+    }
     }
   }
+  
 });

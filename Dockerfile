@@ -17,5 +17,5 @@ COPY . .
 EXPOSE 5173
 
 # Comando para iniciar el servidor de desarrollo.
-# El flag "--host" es OBLIGATORIO en Vite dentro de Docker para exponer la red hacia tu navegador local.
+# El flag "--host" es OBLIGATORIO en Vite dentro de Docker para exponer la red hacia el navegador local.
 CMD ["npm", "run", "dev", "--", "--host"]

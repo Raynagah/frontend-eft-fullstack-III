@@ -15,12 +15,22 @@
       <div class="ficha-header">
         <div class="imagen-contenedor">
           <img :src="mascota.fotografiaUrl || 'https://via.placeholder.com/600x400?text=Sin+Foto'"
-            :alt="'Foto de ' + mascota.nombre" class="mascota-img" />
+            :alt="'Foto de ' + (mascota.nombre || 'Mascota')" class="mascota-img" />
           <span class="badge" :class="estadoClase">{{ mascota.sagaStatus || mascota.estado }}</span>
         </div>
         <div class="titulo-contenedor">
+          <div class="contenedor-badge-tipo" v-if="mascota.tipoReporte">
+            <span class="badge-tipo" :class="claseTipoReporte">
+              {{ mascota.tipoReporte === 'ENCONTRADA' ? '🟢 ENCONTRADA' : '🚨 PERDIDA' }}
+            </span>
+          </div>
+          
           <h2>{{ tituloAmigable }}</h2>
-          <p class="fecha">Reportado en el sistema</p>
+
+          <div class="contenedor-fecha-detalle">
+            <span class="fecha-calendario">📅 {{ fechaFormateada }}</span>
+            <span class="fecha-relativa">🕒 {{ tiempoRelativo }}</span>
+          </div>
         </div>
       </div>
 
@@ -66,7 +76,16 @@
               class="coincidencia-item">
 
               <div class="coincidencia-info">
-                <h4>{{ match.nombreMascota || 'Registro similar detectado' }}</h4>
+                <div class="header-match">
+                  <h4>{{ match.nombreMascota || 'Registro similar detectado' }}</h4>
+                  <span 
+                    v-if="match.tipoReporte" 
+                    class="badge-tipo-mini" 
+                    :class="obtenerClaseTipoMatch(match.tipoReporte)"
+                  >
+                    {{ match.tipoReporte === 'ENCONTRADA' ? '🟢 ENCONTRADA' : '🚨 PERDIDA' }}
+                  </span>
+                </div>
                 <p v-if="match.descripcionMatch" class="match-desc">{{ match.descripcionMatch }}</p>
                 <p v-else class="match-desc">Mascota con alto nivel de coincidencia en especie, raza o color.</p>
               </div>
@@ -107,7 +126,6 @@ import 'leaflet/dist/leaflet.css';
 const router = useRouter();
 const route = useRoute();
 
-// Nueva función para el botón
 const irADetalleMatch = (id) => {
   router.push(`/detalle/${id}`);
 };
@@ -118,21 +136,68 @@ const cargando = ref(true);
 const error = ref(null);
 let mapaInstancia = null;
 
-// Computed properties para seguridad y limpieza
+// Computed properties
 const obtenerLatitud = computed(() => mascota.value?.ubicacion?.latitud || mascota.value?.latitud);
 const obtenerLongitud = computed(() => mascota.value?.ubicacion?.longitud || mascota.value?.longitud);
+
+// NUEVO: Formateador humano para la fecha exacta (Ej: 29 de marzo de 2026, 00:43)
+const fechaFormateated = computed(() => {
+  if (!mascota.value?.fechaReporte) return '';
+  const fecha = new Date(mascota.value.fechaReporte);
+  
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(fecha);
+});
+// Redireccionando para compatibilidad en template
+const fechaFormateada = fechaFormateated;
+
+// NUEVO: Cálculo computado del tiempo transcurrido desde el reporte
+const tiempoRelativo = computed(() => {
+  if (!mascota.value?.fechaReporte) return '';
+
+  const fechaReporte = new Date(mascota.value.fechaReporte);
+  const fechaActual = new Date();
+
+  const utc1 = Date.UTC(fechaReporte.getFullYear(), fechaReporte.getMonth(), fechaReporte.getDate());
+  const utc2 = Date.UTC(fechaActual.getFullYear(), fechaActual.getMonth(), fechaActual.getDate());
+
+  const milisegundosPorDia = 1000 * 60 * 60 * 24;
+  const diferenciaDias = Math.floor((utc2 - utc1) / milisegundosPorDia);
+
+  if (diferenciaDias < 0) return 'Reciente';
+  if (diferenciaDias === 0) return 'Hoy';
+  if (diferenciaDias === 1) return 'Ayer';
+  if (diferenciaDias < 7) return `Hace ${diferenciaDias} días`;
+  if (diferenciaDias < 30) {
+    const semanas = Math.floor(diferenciaDias / 7);
+    return semanas === 1 ? 'Hace 1 semana' : `Hace ${semanas} semanas`;
+  }
+  
+  const meses = Math.floor(diferenciaDias / 30);
+  return meses === 1 ? 'Hace 1 mes' : `Hace ${meses} meses`;
+});
 
 const estadoClase = computed(() => {
   if (!mascota.value) return '';
   const estado = (mascota.value.sagaStatus || mascota.value.estado || '').toUpperCase();
 
-  if (estado === 'COMPLETED') return 'badge-success';
-  if (estado === 'PENDING') return 'badge-warning';
-  if (estado === 'REJECTED' || estado === 'FAILED') return 'badge-danger';
+  if (estado === 'COMPLETED' || estado === 'COMPLETADO') return 'badge-success';
+  if (estado === 'PENDING' || estado === 'PENDIENTE') return 'badge-warning';
+  if (estado === 'REJECTED' || estado === 'FAILED' || estado === 'FAILED_SYNC') return 'badge-danger';
   return 'badge-default';
 });
 
-// Lógica de navegación explícita
+const claseTipoReporte = computed(() => {
+  if (!mascota.value) return '';
+  const tipo = (mascota.value.tipoReporte || '').toUpperCase();
+  return tipo === 'ENCONTRADA' ? 'tipo-encontrada' : 'tipo-perdida';
+});
+
 const irAMascotas = () => {
   router.push('/mascotas');
 };
@@ -220,7 +285,11 @@ const obtenerClaseSimilitud = (porcentaje) => {
   return 'fill-baja';
 };
 
-// Escuchamos cambios en la URL (por ejemplo, saltar del id 1 al id 5 mediante coincidencias)
+const obtenerClaseTipoMatch = (tipo) => {
+  if (!tipo) return '';
+  return tipo.toUpperCase() === 'ENCONTRADA' ? 'tipo-encontrada-mini' : 'tipo-perdida-mini';
+};
+
 watch(() => route.params.id, (nuevoId) => {
   if (nuevoId) {
     cargarDetalle(nuevoId);
@@ -228,7 +297,6 @@ watch(() => route.params.id, (nuevoId) => {
   }
 });
 
-// Arrancar al montar
 onMounted(() => {
   cargarDetalle();
 });
@@ -240,6 +308,7 @@ onMounted(() => {
   margin: 0 auto;
   padding: 1rem 0;
 }
+
 /* --- Botón de Coincidencias --- */
 .btn-ver-match {
   padding: 0.6rem 1.2rem;
@@ -259,7 +328,6 @@ onMounted(() => {
   color: #ffffff; 
 }
 
-/* Limpieza del hover de la tarjeta (para que no parezca que toda la tarjeta es clickeable) */
 .coincidencia-item {
   display: flex;
   align-items: center;
@@ -277,6 +345,7 @@ onMounted(() => {
 .coincidencia-item:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
+
 .estado-mensaje {
   text-align: center;
   padding: 3rem;
@@ -326,22 +395,10 @@ onMounted(() => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.badge-success {
-  background-color: #28a745;
-}
-
-.badge-warning {
-  background-color: #ffc107;
-  color: #000;
-}
-
-.badge-danger {
-  background-color: #dc3545;
-}
-
-.badge-default {
-  background-color: #6c757d;
-}
+.badge-success { background-color: #28a745; }
+.badge-warning { background-color: #ffc107; color: #000; }
+.badge-danger { background-color: #dc3545; }
+.badge-default { background-color: #6c757d; }
 
 .titulo-contenedor {
   padding: 1.5rem 2rem;
@@ -354,9 +411,58 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.fecha {
-  color: #6c757d;
+/* NUEVOS ESTILOS: Fila estética para la fecha y tiempo relativo */
+.contenedor-fecha-detalle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.fecha-calendario, .fecha-relativa {
   font-size: 0.95rem;
+  color: #4a5568;
+  background-color: #edf2f7;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.fecha-relativa {
+  background-color: #e2e8f0;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+/* --- ESTILOS BADGES TIPO REPORTE PRINCIPAL --- */
+.contenedor-badge-tipo {
+  margin-bottom: 0.8rem;
+}
+
+.badge-tipo {
+  display: inline-block;
+  padding: 0.4rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.tipo-perdida {
+  background-color: #fff0f0;
+  color: #dc3545;
+  border: 2px solid #dc3545;
+}
+
+.tipo-encontrada {
+  background-color: #f0fff4;
+  color: #28a745;
+  border: 2px solid #28a745;
 }
 
 /* Grilla de Información */
@@ -378,9 +484,7 @@ onMounted(() => {
   border-left: 5px solid #007bff;
 }
 
-.contacto-card {
-  border-left-color: #17a2b8;
-}
+.contacto-card { border-left-color: #17a2b8; }
 
 .info-card h3 {
   color: #333;
@@ -395,22 +499,9 @@ onMounted(() => {
   font-style: normal;
 }
 
-.lista-datos {
-  list-style: none;
-  padding: 0;
-}
-
-.lista-datos li {
-  margin-bottom: 0.8rem;
-  font-size: 1.05rem;
-  color: #495057;
-}
-
-.lista-datos strong {
-  color: #333;
-  display: inline-block;
-  width: 85px;
-}
+.lista-datos { list-style: none; padding: 0; }
+.lista-datos li { margin-bottom: 0.8rem; font-size: 1.05rem; color: #495057; }
+.lista-datos strong { color: #333; display: inline-block; width: 85px; }
 
 /* Footer y Botones */
 .ficha-footer {
@@ -450,47 +541,44 @@ onMounted(() => {
   color: #6c757d;
 }
 
-/* Enlaces contenedores de coincidencias */
-.coincidencia-item-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-.coincidencia-item-link.deshabilitado {
-  pointer-events: none;
-  cursor: default;
-}
-
-.coincidencia-item {
+.header-match {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  padding: 1.2rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  border: 1px solid #e2e8f0;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
   flex-wrap: wrap;
-  gap: 1rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.coincidencia-item-link:hover .coincidencia-item {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #007bff;
+.header-match h4 {
+  margin: 0;
+  color: #007bff;
+  font-size: 1.1rem;
+}
+
+.badge-tipo-mini {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tipo-perdida-mini {
+  background-color: #fff0f0;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
+
+.tipo-encontrada-mini {
+  background-color: #f0fff4;
+  color: #28a745;
+  border: 1px solid #28a745;
 }
 
 .coincidencia-info {
   flex: 1;
   min-width: 200px;
-}
-
-.coincidencia-info h4 {
-  margin: 0 0 0.3rem 0;
-  color: #007bff;
-  font-size: 1.1rem;
 }
 
 .match-desc {
@@ -519,39 +607,14 @@ onMounted(() => {
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fill-alta {
-  background-color: #28a745;
-}
-
-.fill-media {
-  background-color: #ffc107;
-}
-
-.fill-baja {
-  background-color: #dc3545;
-}
+.fill-alta { background-color: #28a745; }
+.fill-media { background-color: #ffc107; }
+.fill-baja { background-color: #dc3545; }
 
 .score-texto {
   font-size: 0.85rem;
   font-weight: 600;
   color: #495057;
-}
-
-/* Botón visual estilizado (ahora es una etiqueta span controlada por el link) */
-.btn-ver-match-visual {
-  padding: 0.6rem 1.2rem;
-  background-color: #ffffff;
-  color: #007bff;
-  border: 1px solid #007bff;
-  border-radius: 6px;
-  font-weight: bold;
-  display: inline-block;
-  transition: all 0.3s ease;
-}
-
-.coincidencia-item-link:hover .btn-ver-match-visual {
-  background-color: #007bff;
-  color: #ffffff;
 }
 
 /* --- Estilos del Mapa --- */
@@ -590,10 +653,5 @@ onMounted(() => {
     padding: 0;
     margin: 0.5rem 0;
   }
-
-  .btn-ver-match-visual {
-    width: 100%;
-    text-align: center;
-  }
 }
-</style>|
+</style>
