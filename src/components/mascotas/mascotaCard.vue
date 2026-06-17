@@ -136,10 +136,6 @@ const estadoClase = computed(() => {
   transform: translateY(-5px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 9302e3a2b1383fa3bffc4f7fb75a718a1c330bd1
 .card-image {
   position: relative;
   height: 200px;
@@ -149,11 +145,7 @@ const estadoClase = computed(() => {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-<<<<<<< HEAD
-  padding: 1rem; 
-=======
   padding: 1rem;
->>>>>>> 9302e3a2b1383fa3bffc4f7fb75a718a1c330bd1
 }
 
 .card-image img {
@@ -164,10 +156,7 @@ const estadoClase = computed(() => {
   object-fit: contain; 
 }
 
-<<<<<<< HEAD
-=======
 /* --- CLASE BASE PARA BADGES --- */
->>>>>>> 9302e3a2b1383fa3bffc4f7fb75a718a1c330bd1
 .badge {
   position: absolute;
   top: 10px;
@@ -178,10 +167,7 @@ const estadoClase = computed(() => {
   color: white;
   letter-spacing: 0.5px;
   z-index: 2;
-<<<<<<< HEAD
-=======
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
->>>>>>> 9302e3a2b1383fa3bffc4f7fb75a718a1c330bd1
 }
 
 /* Posiciones de los Badges */
